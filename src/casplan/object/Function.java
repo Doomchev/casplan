@@ -29,27 +29,28 @@ public class Function extends CasObject {
     return null;
   }
   
-  public CasObject executeUserFunction(Context context, UserFunction func) {
-      if(func.code == null) error("Function is undefined");
-      Context funcContext = new Context(context, context.parent
-          , func.vars.length);
-      funcContext.parent = context.functionObject;
-      funcContext.functionCall = this;
-      funcContext.prevContext = context;
+  public CasObject executeUserFunction(Context context, UserFunction func
+      , CasObject[] params) {
+    if(func.code == null) error("Function is undefined");
+    Context funcContext = new Context(context, context.parent
+        , func.vars.length);
+    funcContext.parent = context.functionObject;
+    funcContext.functionCall = this;
+    funcContext.prevContext = context;
 
-      if(params == null) stop(context);
-      for(int index = 0; index < func.defaultValues.length; index++) {
-        if(index >= params.length) {
-          funcContext.params[index] = func.defaultValues[index]
-              .toValue(context);
-        } else {
-          funcContext.params[index] = params[index].toValue(context);
-        }
+    if(params == null) stop(context);
+    for(int index = 0; index < func.defaultValues.length; index++) {
+      if(index >= params.length) {
+        funcContext.params[index] = func.defaultValues[index]
+            .toValue(context);
+      } else {
+        funcContext.params[index] = params[index].toValue(context);
       }
+    }
 
-      executeCode(funcContext, func.code);
-      context.functionObject = null;
-      return funcContext.returnedValue;
+    executeCode(funcContext, func.code);
+    context.functionObject = null;
+    return funcContext.returnedValue;
   }
   
   

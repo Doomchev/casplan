@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import casplan.object.CasObject;
 import casplan.object.Field;
 import casplan.object.Function;
+import casplan.object.UserFunction;
 import casplan.value.CasInteger;
 import java.awt.Canvas;
 
@@ -17,7 +18,7 @@ public class Window extends CasObject {
       
   public Frame frame;
   public Canvas canvas;
-  public Function render = null, onClick = null;
+  public UserFunction render = null, onClick = null;
 
   @Override
   public CasObject getField(Field field, Function caller) {
@@ -33,9 +34,9 @@ public class Window extends CasObject {
   @Override
   public void setField(Field field, CasObject toValue, Function caller) {
     if(field == renderField) {
-      render = toValue.toFunction();
+      render = toValue.toUserFunction();
     } else if(field == onClickField) {
-      onClick = toValue.toFunction();
+      onClick = toValue.toUserFunction();
     } else {
       caller.error("Window object has no writable field \"" + field.name + "\"");
     }

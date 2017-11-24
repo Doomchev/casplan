@@ -45,7 +45,8 @@ public class CreateWindow extends ObjectFunction {
           CasObject[] funcParams = new CasObject[2];
           funcParams[0] = new CasInteger(e.getX());
           funcParams[1] = new CasInteger(e.getY());
-          window.onClick.execute(new Context(null, window, 0), funcParams);
+          executeUserFunction(new Context(null, window, 0), window.onClick
+              , funcParams);
         }
       }
 
@@ -97,7 +98,8 @@ public class CreateWindow extends ObjectFunction {
               g.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
               g.drawRect(1, 1, canvas.getWidth() - 3, canvas.getHeight() - 3);
               if(window.render != null) {
-                window.render.execute(new Context(null, window, 0));
+                executeUserFunction(new Context(null, window, 0), window.render
+                    , new CasObject[0]);
               }
             } finally {
               g.dispose();

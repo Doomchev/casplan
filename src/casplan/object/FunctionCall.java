@@ -23,7 +23,8 @@ public class FunctionCall extends Function {
   public Function execute(Context context) {
     Function func = params[0].setFunctionObject(context);
     if(func.isUserFunction()) {
-      executeUserFunction(context, func.toUserFunction());
+      executeUserFunction(context, func.toUserFunction()
+          , params[1].toFunction().params);
       return null;
     } else {
       return func.execute(context, params[1].toFunction().params);
@@ -39,7 +40,8 @@ public class FunctionCall extends Function {
   public CasObject toValue(Context context) {
     Function func = getFunc(context);
     if(func.isUserFunction()) {
-      return executeUserFunction(context, func.toUserFunction());
+      return executeUserFunction(context, func.toUserFunction()
+          , params[1].toFunction().params);
     } else {
       return func.toValue(context);
     }
@@ -49,8 +51,8 @@ public class FunctionCall extends Function {
   public int toInteger(Context context) {
     Function func = getFunc(context);
     if(func.isUserFunction()) {
-      return executeUserFunction(context, func.toUserFunction())
-          .toInteger(context);
+      return executeUserFunction(context, func.toUserFunction()
+          , params[1].toFunction().params).toInteger(context);
     } else {
       return func.toInteger(context);
     }
@@ -61,8 +63,8 @@ public class FunctionCall extends Function {
     Function func = getFunc(context);
     if(func.isUserFunction()) {
       execute(context, params);
-      return executeUserFunction(context, func.toUserFunction())
-          .toStr(context);
+      return executeUserFunction(context, func.toUserFunction()
+          , params[1].toFunction().params).toStr(context);
     } else {
       return func.toStr(context);
     }

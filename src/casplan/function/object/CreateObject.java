@@ -42,7 +42,7 @@ public class CreateObject extends Function {
       
       if(object.constructor != null) {
         context.functionObject = object;
-        executeUserFunction(context, object.constructor);
+        executeUserFunction(context, object.constructor, params);
         //object.constructor.toFunction().execute(constructorContext, params);
       }
     }

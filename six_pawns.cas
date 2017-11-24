@@ -75,7 +75,6 @@ rules() {
 
 init() {
 	for(n = 0 ..< tilemap.cellXQuantity) tilemap.setTile(n, 0, n <= 2 ? white : (n >= 4 ? black : empty))
-	stop()
 }
 
 init()
