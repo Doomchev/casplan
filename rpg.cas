@@ -1,0 +1,64 @@
+player = {
+	name: "Andreas"
+	hp: 100
+	mp: 0
+	maxHp: 100
+	maxMp: 100
+	
+	examine: {
+		print("\(this.name) has now \(this.hp) health points and \(this.mp) mana points.";
+	}
+	
+	castSpell(name, spell) {
+		if(spellMp > spell.mp) {
+			print("\(this.name) tried to cast \(spell.name) but failed.")
+			return
+		}
+		mp -= spell.mp
+		print("\(this.name) casts \(spell.name).")
+	}
+	
+	fightMonster(name, damage) {
+		if(this.hp > hp) {
+			this.hp -= damage;
+			print("\(this.name) slew \(name). Monster dealt \(damage) damage.")
+			player.examine()
+		} else {
+			print("Player dies in a fight with \(name).")
+			end
+		}
+	}
+}
+
+Spell {
+	(this.name, this.mp) {}
+}
+
+Potion {
+	drinkMessage(player) {
+		print("\(player.name) drinks \(this.name)."
+		player.examine()
+	}
+}
+
+ManaPotion = Potion {
+	(this.name, this.mp) {}
+	examine() {
+		print("\(this.name) restores \(this.mp) mana points."
+	}
+	drink(player) {
+		player = min(player.minMp, player.Mp + this.mp
+		drinkMessage(player)
+	}
+}
+
+HealthPotion = Potion {
+	(this.name, this.hp) {}
+	examine() {
+		print("\(this.name) restores \(this.hp) health points.")
+	}
+	drink(player) {
+		player = min(player.minMp, player.Mp + this.mp
+		drinkMessage(player)
+	}
+}

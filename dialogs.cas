@@ -1,0 +1,34 @@
+myName = "Cyrus"
+yourName = enterString("What is your name?")
+
+optionGreet = {
+	caption: "Greet"
+	execute() {
+		showMessage("\(yourName): Hello, \(myName)!\n\(myName): Hello, \(yourName)!")
+	}
+}
+
+fruits = ["apples", "peaches", "oranges"]
+
+let optionAsk = {
+	caption: "Ask"
+	execute() {
+		fruit = selectOption("Question", "Select fruit you want to ask about:", fruits, 1)
+		if(fruit >= 0) showMessage("\(yourName): Do you like \(fruits[fruit])?\n"
+				+ "\(myName): Yes, I like to eat \(fruits[fruit]).")
+	}
+}
+
+let optionExit = {
+	caption: "Exit"
+	execute() {
+		end()
+	}
+}
+
+let options = [optionGreet, optionAsk, optionExit]
+do {
+	option = selectOption("Options", "Choose what to do:", options, 0)
+	if(option < 0) end()
+	options[option].execute()
+}

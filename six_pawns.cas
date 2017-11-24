@@ -1,0 +1,126 @@
+wnd = external.gui.window
+
+limit(value, min, max) -> value < min ? min : (value > max ? max : value)
+
+Img = {
+	map(fileName, cellXQuantity = 1, cellYQuantity = 1) {
+		let texture = external.texture.load(fileName, 1)
+		let cellWidth = texture.width / cellXQuantity
+		let cellHeight = texture.height / cellYQuantity
+		let imageList = List(cellXQuantity * cellYQuantity)
+		let index = 0
+		for(y = 0 ..< cellYQuantity) {
+			for(x = 0 ..< cellXQuantity) {
+				imageList[index] = Img() {
+					texture: texture
+					x: x * cellWidth
+					y: y * cellHeight
+					width: cellWidth
+					height: cellHeight
+				}
+				index++
+			}
+		}
+		return imageList
+	}
+	
+	draw(x, y) {
+		this.texture.draw(x, y, this.x, this.y, this.width, this.height)
+	}
+}
+
+Tilemap = {
+	(xQuantity, yQuantity, images, tileNumber = 0) {
+		this.cellXQuantity = xQuantity
+		this.cellYQuantity = yQuantity
+		this.images = images
+		this.tilesQuantity = images.length
+		this.cellWidth = images[0].width
+		this.cellHeight = images[0].height
+		this.tiles = List(xQuantity * yQuantity, tileNumber)
+	}
+	
+	draw(x = 0, y = 0) {
+		for(tileY = 0 ..< this.cellYQuantity) {
+			for(tileX = 0 ..< this.cellXQuantity) {
+				this.images[this.tiles[tileX + tileY * this.cellXQuantity]]
+						.draw(x + tileX * this.cellWidth, y + tileY * this.cellHeight)
+			}
+		}
+	}
+	
+	getTile(cellX, cellY) -> this.tiles[cellX + cellY * this.cellXQuantity]
+	
+	setTile(cellX, cellY, index) {
+		this.tiles[cellX + cellY * this.cellXQuantity] = index
+	}
+	
+	getTileX(screenX) -> screenX / this.cellWidth
+	getTileY(screenY) -> screenY / this.cellHeight
+}
+
+
+board = external.texture.load("board.png")
+tilemap = Tilemap(7, 1, Img.map("pawns.png", 3))
+
+empty = 0
+white = 1
+black = 2
+
+rules() {
+	showMessage("Вам нужно поменять черные и белые пешки местами.\nЧерные пешки ходят влево, белые - вправо.\n"
+			+ "Пешка может пойти на одну клетку вперед\nили перепрыгнуть через следующую пешку\nна свободное поле."
+			, "Правила игры")
+}
+
+init() {
+	for(n = 0 ..< tilemap.cellXQuantity) tilemap.setTile(n, 0, n <= 2 ? white : (n >= 4 ? black : empty))
+	stop()
+}
+
+init()
+
+wnd.render = () {
+	tilemapX = (wnd.width - tilemap.cellWidth * 7) / 2
+	tilemapY = (wnd.height - tilemap.cellHeight) / 2 - 31
+	boardX = (wnd.width - board.width) / 2
+	boardY = (wnd.height - board.height) / 2 + 31
+	
+	board.draw(boardX, boardY)
+  tilemap.draw(tilemapX, tilemapY)
+}
+
+rules()
+
+wnd.onClick = (x, y) {
+	let tileNum = limit(tilemap.getTileX(x - tilemapX), 0, tilemap.cellXQuantity - 1)
+	let tile = tilemap.getTile(tileNum, 0)
+	if(tile == white && tileNum < tilemap.cellXQuantity - 1) {
+		let nextTile = tilemap.getTile(tileNum + 1, 0)
+		if(nextTile == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum + 1, 0, tile)
+		} else if(tileNum < tilemap.cellXQuantity - 2 && tilemap.getTile(tileNum + 2, 0) == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum + 2, 0, tile)
+		}
+	} else if(tile == black && tileNum > 0) {
+		let prevTile = tilemap.getTile(tileNum - 1, 0)
+		if(prevTile == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum - 1, 0, tile)
+		} else if(tileNum > 1 && tilemap.getTile(tileNum - 2, 0) == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum - 2, 0, tile)
+		}
+	}
+	
+	if(tilemap.getTile(0, 0) == white) return null
+	for(n = 1 ..< tilemap.cellXQuantity) {
+		if(tilemap.getTile(n - 1, 0) == 3 - tilemap.getTile(n, 0)) return null
+	}
+	
+	showMessage("Вы выиграли!")
+	init()
+	rules()
+}

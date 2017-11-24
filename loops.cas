@@ -1,0 +1,4 @@
+list = ["zero", "one", "two"]
+for(index = 0 ..< list.length) print("\(list[index]) = \(index)")
+for(value at index in list) print("\(value) = \(index)")
+for(index = 0; index < list.length; index++) print("\(list[index]) = \(index)")

@@ -1,0 +1,102 @@
+2017.11.23 (version 0.15)
+  + Local variables context.
+	* Classes are cleaned of unnecessary methods.
+2017.11.22 (version 0.14)
+	+ Cross-compilation to JavaScript.
+2017.11.21 (version 0.13.2)
+  * New context system.
+2017.11.19 (version 0.13.1)
+  + Program loop.
+	+ Window onclick event.
+2017.11.17 (version 0.13)
+	+ External functions library.
+  + Window object.
+  + Texture object.
+2017.11.16 (version 0.12)
+  + Constructors.
+  + Object instance creation.
+	+ Null object.
+	+ This object.
+  + Default values for function parameters.
+  + List constructor.
+2017.11.15 (version 0.11.1)
+  + Line and colum number in runtime errors.
+2017.11.09 (version 0.11)
+  + String interpolation ("/(a)").
+  + Escape sequences (\n \" \\).
+  + Option/dropdown selection dialog.
+2017.11.08 (version 0.10)
+  + Anonymous functions.
+  + User object functions.
+  + User object field setting / getting.
+2017.11.05 (version 0.9.1)
+  + Half-open range operator (..<).
+2017.11.04 (version 0.9)
+  + Lists.
+  + Functions of built-in objects.
+  + Boolean operators (&& ||).
+  + For-in (at indexat in).
+2017.11.03 (version 0.8)
+  + User objects.
+2017.11.02 (version 0.7.1)
+  + Line and column in chunk sequence compilation error messages.
+2017.10.27 (version 0.7)
+  + Operators precedence.
+2017.10.22 (version 0.6)
+  + User function parameters.
+  + Return statement.
+  + Deferred function definition.
+  + Function context.
+  + String representation of objects for debugging.
+  + Ternary operator (? :).
+  + Short function operator (->).
+  * New operator type determination system.
+2017.10.21 (version 0.5)
+  + User functions.
+2017.10.19 (version 0.4)
+  + Booleans.
+  + For loop.
+  + Break and continue statements.
+2017.10.18 (version 0.3)
+  + Code blocks.
+  + Loops (do).
+  + Conditions (if else).
+  + 2-symbol operators support.
+  + Increment operator.
+2017.10.17 (version 0.2)
+  + Integers.
+  + Arithmetic operators (+ - * /).
+  + Variables.
+  + Random numbers.
+  + Comparsion operators (< > <= >=).
+  + String inputbox function.
+  + Parser error messages with line and column number.
+2017.10.16 (version 0.1)
+  + Strings.
+  + External functions.
+  + Console log function.
+  + Function calls.
+  
+  
+  
+To do:
+	
+	
+To do later:
+  + Comments (//).
+  + Yes/No dialog.
+  + Round, floor, ceil functions.
+	+ This syntax in constructor parameters ((this.value){}).
+	+ Constants.
+  + GUI.
+  + Debugger.
+  + Import directive.
+  + Sets.
+  + Maps.
+  + Enumerations.
+  + Slices ([..a] [a..] [a..b]).
+  + Switch(switch(x) {a: code b: code} default {code})
+  + Remainder operator (%).
+  + Power operator (**).
+  + Unary minus (-a).
+  + Not operator (!a).

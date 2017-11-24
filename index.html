@@ -1,0 +1,133 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='UTF-8'><script type='text/javascript'>
+images_ = ['pawns.png', 'board.png'];
+function main_() {
+	function init() {
+		for(n = 0; n < tilemap.cellXQuantity; n++) {
+			tilemap.setTile(n, 0, n <= 2 ? white : (n >= 4 ? black : empty));
+		};
+	}
+	function limit(value, min, max) {
+		return value < min ? min : (value > max ? max : value);
+	}
+	function rules() {
+		showMessage("Вам нужно поменять черные и белые пешки местами.\nЧерные пешки ходят влево, белые - вправо.\n" + "Пешка может пойти на одну клетку вперед\n или перепрыгнуть через следующую пешку\nна свободное поле.", "Правила игры");
+	}
+	wnd = external.gui.window;
+	Img = createObject_(null, {
+		map: function(fileName, cellXQuantity, cellYQuantity) {
+			if(cellXQuantity === undefined) cellXQuantity = 1;
+			if(cellYQuantity === undefined) cellYQuantity = 1;
+			texture = external.texture.load(fileName, 1);
+			cellWidth = Math.floor(texture.width / cellXQuantity);
+			cellHeight = Math.floor(texture.height / cellYQuantity);
+			imageList = createList_(cellXQuantity * cellYQuantity);
+			index = 0;
+			for(y = 0; y < cellYQuantity; y++) {
+				for(x = 0; x < cellXQuantity; x++) {
+					imageList[index] = createObject_(Img, {
+						texture: texture,
+						x: x * cellWidth,
+						y: y * cellHeight,
+						width: cellWidth,
+						height: cellHeight,
+					});
+					index++;
+				};
+			};
+			return imageList;
+		},
+		draw: function(x, y) {
+			this.texture.draw(x, y, this.x, this.y, this.width, this.height);
+		},
+	});
+	Tilemap = createObject_(null, {
+		create_: function(xQuantity, yQuantity, images, tileNumber) {
+			if(tileNumber === undefined) tileNumber = 0;
+			this.cellXQuantity = xQuantity;
+			this.cellYQuantity = yQuantity;
+			this.images = images;
+			this.tilesQuantity = images.length;
+			this.cellWidth = images[0].width;
+			this.cellHeight = images[0].height;
+			this.tiles = createList_(xQuantity * yQuantity, tileNumber);
+		},
+		draw: function(x, y) {
+			if(x === undefined) x = 0;
+			if(y === undefined) y = 0;
+			for(tileY = 0; tileY < this.cellYQuantity; tileY++) {
+				for(tileX = 0; tileX < this.cellXQuantity; tileX++) {
+					this.images[this.tiles[tileX + tileY * this.cellXQuantity]].draw(x + tileX * this.cellWidth, y + tileY * this.cellHeight);
+				};
+			};
+		},
+		getTile: function(cellX, cellY) {
+			return this.tiles[cellX + cellY * this.cellXQuantity];
+		},
+		setTile: function(cellX, cellY, index) {
+			this.tiles[cellX + cellY * this.cellXQuantity] = index;
+		},
+		getTileX: function(screenX) {
+			return Math.floor(screenX / this.cellWidth);
+		},
+		getTileY: function(screenY) {
+			return Math.floor(screenY / this.cellHeight);
+		},
+	});
+	images = Img.map("pawns.png", 3);
+	board = external.texture.load("board.png");
+	tilemap = Tilemap(7, 1, images);
+	empty = 0;
+	white = 1;
+	black = 2;
+	init();
+	tilemapX = Math.floor((wnd.width - tilemap.cellWidth * 7) / 2);
+	tilemapY = Math.floor((wnd.height - tilemap.cellHeight) / 2) - 31;
+	boardX = Math.floor((wnd.width - board.width) / 2);
+	boardY = Math.floor((wnd.height - board.height) / 2) + 31;
+	wnd.render = function() {
+		board.draw(boardX, boardY);
+		tilemap.draw(tilemapX, tilemapY);
+	};
+	rules();
+	wnd.onClick = function(x, y) {
+		tileNum = limit(tilemap.getTileX(x - tilemapX), 0, tilemap.cellXQuantity - 1);
+		tile = tilemap.getTile(tileNum, 0);
+		if(tile == white && tileNum < tilemap.cellXQuantity - 1) {
+			nextTile = tilemap.getTile(tileNum + 1, 0);
+			if(nextTile == empty) {
+				tilemap.setTile(tileNum, 0, empty);
+				tilemap.setTile(tileNum + 1, 0, tile);
+			} else {
+				if(tileNum < tilemap.cellXQuantity - 2 && tilemap.getTile(tileNum + 2, 0) == empty) {
+					tilemap.setTile(tileNum, 0, empty);
+					tilemap.setTile(tileNum + 2, 0, tile);
+				};
+			};
+		} else {
+			if(tile == black && tileNum > 0) {
+				prevTile = tilemap.getTile(tileNum - 1, 0);
+				if(prevTile == empty) {
+					tilemap.setTile(tileNum, 0, empty);
+					tilemap.setTile(tileNum - 1, 0, tile);
+				} else {
+					if(tileNum > 1 && tilemap.getTile(tileNum - 2, 0) == empty) {
+						tilemap.setTile(tileNum, 0, empty);
+						tilemap.setTile(tileNum - 2, 0, tile);
+					};
+				};
+			};
+		};
+		if(tilemap.getTile(0, 0) == white) {
+			return null;
+		};
+		for(n = 1; n < tilemap.cellXQuantity; n++) {
+			if(tilemap.getTile(n - 1, 0) == 3 - tilemap.getTile(n, 0)) {
+				return null;
+			};
+		};
+		showMessage("Вы выиграли!");
+		init();
+		rules();
+	};
+}
+</script><script src='casplan.js'></script></head><body></body></html>
