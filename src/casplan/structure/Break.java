@@ -4,7 +4,7 @@ import casplan.object.Context;
 import casplan.object.Function;
 
 public class Break extends Function {
-  public static Function instance = new Break();
+  public static final Function instance = new Break();
 
   private Break() {
   }

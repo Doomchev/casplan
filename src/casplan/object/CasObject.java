@@ -1,9 +1,9 @@
 package casplan.object;
 
 import casplan.Base;
-import casplan.ChunkSequence;
 import casplan.function.object.CreateObject;
 import casplan.structure.ForIn;
+import javax.swing.JOptionPane;
 
 public class CasObject extends Base {
   public static final UserObject root = new UserObject();
@@ -100,7 +100,16 @@ public class CasObject extends Base {
   }
   
   
-
+  
+  public boolean setBreakpointInside() {
+    return false;
+  }
+  
+  
+  
+  public void setParent(Function func) {
+  }
+  
   public void applyConstructor(Context context, UserObject object
       , CasObject[] params) {
   }
@@ -153,5 +162,9 @@ public class CasObject extends Base {
   @Override
   public String toString() {
     return getClass().getSimpleName();
+  }
+  
+  public String getCaption() {
+    return "";
   }
 }

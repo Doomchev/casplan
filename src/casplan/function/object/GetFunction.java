@@ -1,8 +1,6 @@
 package casplan.function.object;
 
-import casplan.object.CasObject;
-import casplan.object.Context;
-import casplan.object.Function;
+import casplan.object.*;
 
 public class GetFunction extends Function {
   Function function;

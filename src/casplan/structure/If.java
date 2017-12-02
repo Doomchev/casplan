@@ -1,22 +1,29 @@
 package casplan.structure;
 
-import casplan.object.CasObject;
-import casplan.object.Context;
-import casplan.object.Function;
+import casplan.object.*;
 
 public class If extends Function {
-  CasObject condition;
-  Function[] thenCode;
+  public CasObject condition;
+  public Function[] thenCode;
   public Function[] elseCode = new Function[0];
-
-  public If(CasObject condition, Function[] thenCode) {
-    this.condition = condition;
-    this.thenCode = thenCode;
-  }
   
   @Override
   public Function execute(Context context) {
-    return executeCode(context, condition.toBoolean(context) ? thenCode : elseCode);
+    return executeCode(context, condition.toBoolean(context)
+        ? thenCode : elseCode, this);
+  }
+  
+  
+  
+  @Override
+  public void setNextBreakpoint(Context context, BPType type) {
+    breakpoint = BPType.STEP_INTO;
+  }
+  
+  @Override
+  public void setChildBreakpoint(Context context, Function func, BPType type) {
+    setCodeBreakpoint(context, arrayContains(thenCode, func) ? thenCode
+        : elseCode, func, type, false);
   }
   
   

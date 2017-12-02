@@ -35,8 +35,10 @@ public class Window extends CasObject {
   public void setField(Field field, CasObject toValue, Function caller) {
     if(field == renderField) {
       render = toValue.toUserFunction();
+      render.name = "window.render" + render.name;
     } else if(field == onClickField) {
       onClick = toValue.toUserFunction();
+      onClick.name = "window.onClick" + render.name;
     } else {
       caller.error("Window object has no writable field \"" + field.name + "\"");
     }

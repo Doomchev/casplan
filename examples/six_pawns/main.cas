@@ -59,7 +59,6 @@ Tilemap = {
 	getTileY(screenY) -> screenY / this.cellHeight
 }
 
-
 board = external.texture.load("board.png")
 tilemap = Tilemap(7, 1, Img.map("pawns.png", 3))
 
@@ -92,6 +91,8 @@ wnd.render = () {
 rules()
 
 wnd.onClick = (x, y) {
+  stop
+
 	let tileNum = limit(tilemap.getTileX(x - tilemapX), 0, tilemap.cellXQuantity - 1)
 	let tile = tilemap.getTile(tileNum, 0)
 	if(tile == white && tileNum < tilemap.cellXQuantity - 1) {

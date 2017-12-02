@@ -5,6 +5,6 @@ import casplan.Parser;
 
 public class Loops {
   public static void main(String[] args) {
-    Base.executeCodeBlock(Parser.readModule("loops.cas"));
+    Base.executeFunctionCall(Parser.readModule("loops.cas"));
   }
 }

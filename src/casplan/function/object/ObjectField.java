@@ -67,4 +67,9 @@ public class ObjectField extends ObjectFunction {
   public String toString() {
     return params[0].toString() + "." + params[1].toString();
   }
+  
+  @Override
+  public String getCaption() {
+    return params[0].getCaption() + "." + params[1].toField().name;
+  }
 }

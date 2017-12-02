@@ -4,7 +4,7 @@ import casplan.object.Context;
 import casplan.object.Function;
 
 public class Continue extends Function {
-  public static Function instance = new Continue();
+  public static final Function instance = new Continue();
 
   private Continue() {
   }

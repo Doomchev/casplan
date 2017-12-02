@@ -5,17 +5,23 @@ import casplan.object.Context;
 import casplan.object.Function;
 
 public class Return extends Function {
-  public static Function instance = new Return(null);
+  public static final Function instance = new Return();
 
-  public Return(CasObject valueFunction) {
+  public Return() {
     this.params = new CasObject[1];
-    this.params[0] = valueFunction;
   }
   
   @Override
   public Function execute(Context context) {
     context.returnedValue = params[0].toValue(context);
     return instance;
+  }
+
+  
+
+  @Override
+  public void setNextBreakpoint(Context context, BPType type) {
+    super.setNextBreakpoint(context, BPType.STEP_OUT);
   }
   
   

@@ -1,5 +1,6 @@
 package casplan;
 
+import casplan.function.Breakpoint;
 import casplan.object.UserFunction;
 import casplan.object.CasObject;
 import casplan.object.Parameter;
@@ -11,10 +12,12 @@ import external.function.ShowMessage;
 import external.function.integer.RandomInteger;
 import casplan.object.Context;
 import casplan.object.Function;
+import casplan.object.FunctionCall;
 import external.function.integer.SelectOption;
 import java.util.HashMap;
 import javax.swing.JOptionPane;
 import java.util.LinkedList;
+import javax.swing.UIManager;
 
 public class Base {
   public static final HashMap<Class, String> functionAddresses = new HashMap<>();
@@ -22,6 +25,7 @@ public class Base {
   static final HashMap<String, Variable> globalVariables = new HashMap<>();
   public static HashMap<String, Parameter> currentParameters = new HashMap<>();
   public static LinkedList<Parameter> currentParametersList = new LinkedList<>();
+  public static String workingDirectory;
   
   static {
     addGlobalVariable("print", new Print());
@@ -30,6 +34,11 @@ public class Base {
     addGlobalVariable("showMessage", new ShowMessage());
     addGlobalVariable("selectOption", new SelectOption());
     addGlobalVariable("end", new End());
+    
+    try {
+      UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+    } catch (Exception ex) {
+    }
   }
   
   public static Output output = Output.DEBUG;
@@ -84,22 +93,19 @@ public class Base {
     return createGlobalVariable(name);
   }
   
-  public static void executeCodeBlock(Function[] code) {
-    Context context = new Context(null, null, currentParametersList.size());
-    for(Function call : code) call.execute(context);
-  }
-  
-  public static void stop(Context context) {
-    Debugger.execute(context);
+  public static void executeFunctionCall(FunctionCall call) {
+    call.execute(new Context(null, call, currentParametersList.size()));
   }
   
   public static void runtimeError(String message) {
-    JOptionPane.showMessageDialog(null, message, "Runtime error", JOptionPane.ERROR_MESSAGE);
-    System.exit(1);
+    JOptionPane.showMessageDialog(null, message, "Runtime error"
+        , JOptionPane.ERROR_MESSAGE);
+    throw new RuntimeException();
   }
   
   public static void parserError(String message) {
-    JOptionPane.showMessageDialog(null, message, "Parsing error", JOptionPane.ERROR_MESSAGE);
-    System.exit(1);
+    JOptionPane.showMessageDialog(null, message, "Parsing error"
+        , JOptionPane.ERROR_MESSAGE);
+    throw new RuntimeException();
   }
 }

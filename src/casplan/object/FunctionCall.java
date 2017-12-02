@@ -8,7 +8,7 @@ public class FunctionCall extends Function {
     return 17;
   }
   
-  private Function getFunc(Context context) {
+  private CasObject getFunc(Context context, boolean execute) {
     Function func = params[0].setFunctionObject(context);
     func.params = params[1].toFunction().params;
     CreateObject newCreator = func.toCreator();
@@ -16,58 +16,64 @@ public class FunctionCall extends Function {
     if(newCreator != null && oldCreator != null) {
       newCreator.entries = oldCreator.entries;
     }
-    return func;
+    
+    if(breakpoint == BPType.STEP_INTO) {
+      if(!func.setBreakpointInside()) {
+        setBreakpointInsideParent(context, BPType.STEP);      
+      }
+      breakpoint = BPType.NONE;
+    }
+    
+    if(func.isUserFunction()) {
+      return executeUserFunction(context, func.toUserFunction()
+          , params[1].toFunction().params);
+    } else {
+      if(execute) func.execute(context, params[1].toFunction().params);
+      return func;
+    }
   }
   
   @Override
   public Function execute(Context context) {
-    Function func = params[0].setFunctionObject(context);
-    if(func.isUserFunction()) {
-      executeUserFunction(context, func.toUserFunction()
-          , params[1].toFunction().params);
-      return null;
-    } else {
-      return func.execute(context, params[1].toFunction().params);
-    }
+    getFunc(context, true);
+    return null;
   }
 
   @Override
   public CasObject toObject(Context context) {
-    return toValue(context);
+    return getFunc(context, false).toValue(context);
   }
 
   @Override
   public CasObject toValue(Context context) {
-    Function func = getFunc(context);
-    if(func.isUserFunction()) {
-      return executeUserFunction(context, func.toUserFunction()
-          , params[1].toFunction().params);
-    } else {
-      return func.toValue(context);
-    }
+    return getFunc(context, false).toValue(context);
   }
   
   @Override
   public int toInteger(Context context) {
-    Function func = getFunc(context);
-    if(func.isUserFunction()) {
-      return executeUserFunction(context, func.toUserFunction()
-          , params[1].toFunction().params).toInteger(context);
-    } else {
-      return func.toInteger(context);
-    }
+    return getFunc(context, false).toInteger(context);
   }
   
   @Override
   public String toStr(Context context) {
-    Function func = getFunc(context);
-    if(func.isUserFunction()) {
-      execute(context, params);
-      return executeUserFunction(context, func.toUserFunction()
-          , params[1].toFunction().params).toStr(context);
+    return getFunc(context, false).toStr(context);
+  }
+  
+  
+  
+  @Override
+  public void setNextBreakpoint(Context context, BPType type) {
+    if(type == BPType.STEP_INTO) {
+      breakpoint = BPType.STEP_INTO;
     } else {
-      return func.toStr(context);
+      super.setNextBreakpoint(context, type);
     }
+  }
+  
+  @Override
+  public boolean setBreakpointInside() {
+    breakpoint = BPType.STEP_INTO;
+    return true;
   }
   
   
@@ -90,5 +96,10 @@ public class FunctionCall extends Function {
       return "createObject_(" + params[0].toString() + ", "
           + creator.getAppliedObject() + ")";
     }
+  }
+  
+  @Override
+  public String getCaption() {
+    return params[0].getCaption();
   }
 }

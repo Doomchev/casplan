@@ -61,4 +61,9 @@ public class Parameter extends CasObject {
   public String toString() {
     return name;
   }
+  
+  @Override
+  public String getCaption() {
+    return name;
+  }
 }

@@ -25,7 +25,8 @@ public class CreateWindow extends ObjectFunction {
     frame.addWindowListener(new WindowAdapter() {  
       @Override
       public void windowClosing(WindowEvent e) {  
-        frame.dispose();  
+        //frame.dispose();
+        System.exit(0);
       }  
     });  
     
@@ -91,9 +92,8 @@ public class CreateWindow extends ObjectFunction {
           start = now;
           if (1000000000 / 60f - (System.nanoTime() - start) > 1000000) {
             BufferStrategy bf = canvas.getBufferStrategy();
-            Graphics2D g = null;
             try {
-              g = (Graphics2D) bf.getDrawGraphics();
+              Graphics2D g = (Graphics2D) bf.getDrawGraphics();
               Window.graphics = g;
               g.clearRect(0, 0, canvas.getWidth(), canvas.getHeight());
               g.drawRect(1, 1, canvas.getWidth() - 3, canvas.getHeight() - 3);
@@ -101,14 +101,13 @@ public class CreateWindow extends ObjectFunction {
                 executeUserFunction(new Context(null, window, 0), window.render
                     , new CasObject[0]);
               }
-            } finally {
+              
               g.dispose();
-            }
-            bf.show();
-            Toolkit.getDefaultToolkit().sync();      
-            try {
+              bf.show();
+              Toolkit.getDefaultToolkit().sync();      
+              
               Thread.sleep(0, 999999);
-            } catch (InterruptedException ex) {
+            } catch(Exception ex) {
             }
           }
         }

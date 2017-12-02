@@ -46,12 +46,26 @@ public class UserFunction extends Function {
   public boolean isUserFunction() {
     return true;
   }
+  
+  
+  
+  @Override
+  public boolean setBreakpointInside() {
+    if(code.length == 0) return false;
+    code[0].setBreakpoint(BPType.STEP_INTO);
+    return true;
+  }
+  
+  @Override
+  public void setChildBreakpoint(Context context, Function func, BPType type) {
+    setCodeBreakpoint(context, code, func, type, false);
+  }
 
   
 
   @Override
   public String toString() {
-    return "function(" + name + ")" + (output == Output.JS ? " {\n"
+    return "function" + name + (output == Output.JS ? name + " {\n"
         + getCode() + tabString + "}" : "");
   }
   
@@ -59,7 +73,8 @@ public class UserFunction extends Function {
   public String getCode() {
     String str = "";
     for(int index = 0; index < vars.length; index++) {
-      CasObject value = defaultValues[index];
+      CasObject value = index < defaultValues.length ? defaultValues[index]
+          : Null.instance;
       if(value != Null.instance) str += tabString + "\tif(" + vars[index].name
           + " === undefined) " + vars[index].name + " = " + value + ";\n";
     }
@@ -74,5 +89,10 @@ public class UserFunction extends Function {
       str += var.name;
     }
     return "(" + str + ")";
+  }
+  
+  @Override
+  public String getCaption() {
+    return name;
   }
 }

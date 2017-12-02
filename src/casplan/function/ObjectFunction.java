@@ -2,7 +2,6 @@ package casplan.function;
 
 import casplan.object.Context;
 import casplan.object.Function;
-import casplan.structure.ForIn;
 
 public class ObjectFunction extends Function {
   @Override

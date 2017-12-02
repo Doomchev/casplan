@@ -6,8 +6,7 @@ import casplan.function.*;
 import casplan.function.operator.*;
 import casplan.function.object.*;
 import casplan.function.bool.*;
-import external.function.object.CreateWindow;
-import external.function.object.LoadTexture;
+import external.function.object.*;
 import java.util.HashMap;
 
   
@@ -93,9 +92,6 @@ public class ChunkSequence extends Base {
         return;
       case "List":
         addObject(new CreateList(null));
-        return;
-      case "stop":
-        addObject(new Stop());
         return;
     }
     add(new Chunk(id, null, null, null));
@@ -229,9 +225,12 @@ public class ChunkSequence extends Base {
             value.params[0] = n == 3 ? (chunk.prevChunk.id == null
                 ? chunk.prevChunk.value : getVariable(chunk.prevChunk.id))
                 : chunk.prevChunk.getValue();
+            value.params[0].setParent(value);
+            
             if(!increment) {
               value.params[1] = n == 17 && chunk.nextChunk.id != null 
                 ? Field.get(chunk.nextChunk.id) : chunk.nextChunk.getValue();
+              value.params[1].setParent(value);
             }
 
             Chunk newChunk = new Chunk(null, null, value, value);

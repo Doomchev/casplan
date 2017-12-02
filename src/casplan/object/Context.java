@@ -12,5 +12,6 @@ public class Context {
   public CasObject[] params;
   public CasObject functionObject;
   public Function functionCall;
+  public UserFunction function;
   public Context prevContext;
 }

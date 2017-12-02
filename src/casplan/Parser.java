@@ -5,30 +5,25 @@ import casplan.structure.*;
 import casplan.object.*;
 import casplan.function.object.*;
 import casplan.ChunkSequence.Chunk;
-import casplan.function.SetVariable;
+import casplan.function.*;
 import casplan.function.object.CreateList;
 import casplan.function.object.CreateObject.Entry;
-import java.io.BufferedReader;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Parser extends Base {
   public static void main(String[] args) throws IOException {
-    executeCodeBlock(readModule("main.cas"));
+    executeFunctionCall(readModule("main.cas"));
   }
   
   static String text;
   static int textIndex, textLength, currentLine, lineStart;
   
   
-  public static Function[] readModule(String fileName) {
+  public static FunctionCall readModule(String fileName) {
+    workingDirectory = new File(fileName).getParent() + "/";
+    
     currentLine = 1;
     lineStart = -1;
     InputStream stream = null;
@@ -49,13 +44,27 @@ public class Parser extends Base {
       }
       textIndex = 0;
       textLength = text.length();
+      
+      reader.close();
     } catch (UnsupportedEncodingException ex) {
       Base.parserError("Unsupported encoding");
     } catch (IOException ex) {
       Base.parserError("Cannot read " + fileName);
     }
     
-    return readCodeBlock(true);
+    UserFunction func = new UserFunction();
+    func.code = readCodeBlock(true, func);
+    func.vars = new Parameter[0];
+    func.defaultValues = new CasObject[0];
+    
+    Function params = new Function();
+    params.params = new CasObject[0];
+    
+    FunctionCall call = new FunctionCall();
+    call.params = new CasObject[2];
+    call.params[0] = func;
+    call.params[1] = params;
+    return call;
   }  
 
   public static void toHTML(Function[] code, String fileName) {
@@ -86,7 +95,7 @@ public class Parser extends Base {
     }
   }
   
-  static Function[] readCodeBlock(boolean multipleLines) {
+  static Function[] readCodeBlock(boolean multipleLines, Function parent) {
     LinkedList<Function> code = new LinkedList<>();
     while(true) {
       if(textIndex == textLength) break;
@@ -101,9 +110,10 @@ public class Parser extends Base {
         textIndex++;
         break;
       }
-      
-      Function call = readFunctionCall();
+
+      Function call = readFunctionCall(null);
       if(call == null) continue;
+      call.blockParent = parent;
       code.add(call);
       if(!multipleLines) break;
     }    
@@ -111,16 +121,15 @@ public class Parser extends Base {
     return code.toArray(new Function[0]);
   }
   
-  static CasObject[] readParams() {
+  static CasObject[] readParams(Function parent) {
     LinkedList<CasObject> params = new LinkedList<>();
     while(true) {
       if(readSymbol(')')) {
         return params.toArray(new CasObject[0]);
       }
-      CasObject param = readFunction();
+      CasObject param = readFunction(parent);
       params.add(param);
       readSymbol(',');
-      if(params.size() > 100) stop(null);
     }    
   }
    
@@ -140,8 +149,17 @@ public class Parser extends Base {
     }
   }
   
+  static <E extends Function> E init(E func, Position pos) {
+    func.line = pos.posLine;
+    func.column = pos.posTextIndex - pos.posLineStart;
+    func.startingTextIndex = pos.posTextIndex;
+    func.textLength = textIndex - pos.posTextIndex;
+    return func;
+  }
+  
   static If currentIf = null;
-  static Function readFunctionCall() {
+  static Function readFunctionCall(Function parent) {
+    skipEmptyCharacters();
     Position startingPos = new Position();
     String id = readId();
     
@@ -149,34 +167,39 @@ public class Parser extends Base {
       if(currentIf == null) error("Else without if");
       If ifBlock = currentIf;
       currentIf = null;
-      ifBlock.elseCode = readCodeBlock(false);
-      return readFunctionCall();
+      ifBlock.elseCode = readCodeBlock(false, ifBlock);
+      return readFunctionCall(currentIf);
     }
     currentIf = null;
     
     switch(id) {
+      case "stop":
+        return init(new Breakpoint(), startingPos);
       case "let":
         id = readId();
         readExpectedSymbol('=');
-        SetVariable setVariable = new SetVariable();
-        setVariable.let = true;
-        setVariable.params = new CasObject[2];
-        setVariable.params[1] = readFunction();
+        SetVariable setVariable = new SetVariable(true);
+        setVariable.params[1] = readFunction(setVariable);
         setVariable.params[0] = addParameter(id);
-        return setVariable;
+        return init(setVariable, startingPos);
       case "break":
         return Break.instance;
       case "continue":
         return Continue.instance;
       case "return":
-        return new Return(readFunction());
+        Return ret = new Return();
+        ret.params[0] = readFunction(ret);
+        return init(ret, startingPos);
       case "do":
-        return new Do(readCodeBlock(false));
+        Do doFunc = init(new Do(), startingPos);
+        doFunc.code = readCodeBlock(false, doFunc);
+        return doFunc;
       case "if":
         readExpectedSymbol('(');
-        CasObject ifCondition = readParams()[0];
-        Function[] thenCode = readCodeBlock(false);
-        If ifBlock = new If(ifCondition, thenCode);
+        If ifBlock = init(new If(), startingPos);
+        ifBlock.condition = readFunction(ifBlock);
+        readExpectedSymbol(')');
+        ifBlock.thenCode = readCodeBlock(false, ifBlock);
         currentIf = ifBlock;
         return ifBlock;
       case "for":
@@ -191,38 +214,55 @@ public class Parser extends Base {
           case "at":
             String id2 = readId();
             if(id2.isEmpty()) error("Expected identifier");
-            Parameter var2 = addParameter(id2);
             
+            ForIn forIn = new ForIn();
+            //var1, var2, object
+            forIn.value = var1;
+            forIn.index = addParameter(id2);
             if(!readId().equals("in")) error("\"in\" expected");
-            CasObject object = readFunction();
+            forIn.object = readFunction(forIn);
             readExpectedSymbol(')');
-            return new ForIn(var1, var2, object, readCodeBlock(false));
+            forIn.code = readCodeBlock(false, forIn);
+            return init(forIn, startingPos);
           case "in":
-            object = readFunction();
+            forIn = new ForIn();
+            forIn.value = var1;
+            forIn.object = readFunction(forIn);
             readExpectedSymbol(')');
-            return new ForIn(var1, null, object, readCodeBlock(false));
+            forIn.code = readCodeBlock(false, forIn);
+            return init(forIn, startingPos);
           case "indexin":
-            object = readFunction();
+            forIn = new ForIn();
+            forIn.value = var1;
+            forIn.object = readFunction(forIn);
             readExpectedSymbol(')');
-            return new ForIn(null, var1, object, readCodeBlock(false));
+            forIn.code = readCodeBlock(false, forIn);
+            return init(forIn, startingPos);
         }
         
         if(readSymbol('=')) {
-          Range range = readFunction().toRange();
+          Range range = readFunction(null).toRange();
           if(range != null) {
             readExpectedSymbol(')');
-            return new ForInRange(var1, range, readCodeBlock(false));
+            ForInRange forInRange
+                = init(new ForInRange(var1, range), startingPos);
+            range.setParent(forInRange);
+            forInRange.code = readCodeBlock(false, forInRange);
+            return forInRange;
           }
         }
         
         bracketPos.set();
-        Function init = readFunctionCall();
+        For forFunc = new For();
+        forFunc.init = readFunctionCall(forFunc);
         readExpectedSymbol(';');
-        CasObject forCondition = readFunction();
+        forFunc.condition = readFunction(forFunc);
         readExpectedSymbol(';');
-        Function increment = readFunctionCall();
+        forFunc.increment = readFunctionCall(forFunc);
         readExpectedSymbol(')');
-        return new For(init, forCondition, increment, readCodeBlock(false));
+        
+        forFunc.code = readCodeBlock(false, forFunc);
+        return init(forFunc, startingPos);
     }
     
     while(true) {
@@ -252,7 +292,7 @@ public class Parser extends Base {
           Chunk chunk = readChunkSequence().compile();
           Function call = chunk.call;
           if(call == null) error("Function call expected");
-          return call;
+          return init(call, startingPos);
       }
       
       textIndex++;
@@ -270,7 +310,7 @@ public class Parser extends Base {
       if(!varId.isEmpty()) {
         idList.add(varId);
         if(readSymbol('=')) {
-          defaultValues.add(readFunction());
+          defaultValues.add(readFunction(null));
         } else {
           defaultValues.add(Null.instance);
         }
@@ -303,18 +343,25 @@ public class Parser extends Base {
         func.name += (func.name.isEmpty() ? "" : ", ") + varId2;
         addParameter(varId2);
       }
+      func.name = "(" + func.name + ")";
+      init(func, startingPos);
 
       if(shortFunction) {
         func.code = new Function[1];
-        func.code[0] = new Return(readFunction());
+        Position pos = new Position();
+        Return ret = new Return();
+        ret.blockParent = func;
+        ret.params[0] = readFunction(ret);
+        func.code[0] = init(ret, pos);
       } else {
-        func.code = readCodeBlock(false);
+        func.code = readCodeBlock(false, func);
       }
       func.vars = currentParametersList.toArray(new Parameter[0]);
       func.defaultValues = defaultValues.toArray(new CasObject[0]);
       
       currentParameters = oldParameters;
       currentParametersList = oldParametersList;
+      
       return func;
     }
     startingPos.set();
@@ -323,11 +370,14 @@ public class Parser extends Base {
   
   
   
-  static CasObject readFunction() {
-    return readChunkSequence().compile().value;
+  static CasObject readFunction(Function parent) {
+    CasObject func = readChunkSequence().compile().value;
+    func.setParent(parent);
+    return func;
   }
   
-  static CreateObject readObject(ChunkSequence sequence, CasObject[] constructorParams) {
+  static CreateObject readObject(ChunkSequence sequence
+      , CasObject[] constructorParams) {
     CreateObject creator = new CreateObject(constructorParams);
     while(true) {
       String fieldId = readId();
@@ -351,15 +401,17 @@ public class Parser extends Base {
       }
 
       readExpectedSymbol(':');
-      creator.entries.add(new Entry(Field.get(fieldId), readFunction()));
+      creator.entries.add(new Entry(Field.get(fieldId), readFunction(creator)));
     }
   }
   
   static ChunkSequence readChunkSequence() {
+    skipEmptyCharacters();
     String id = readId();
     ChunkSequence sequence = new ChunkSequence();
     
     while(true) {
+      skipEmptyCharacters();
       if(textIndex == textLength) {
         if(!id.isEmpty()) error("operator or function parameters are expected");
         return sequence;
@@ -386,7 +438,7 @@ public class Parser extends Base {
               }
               
               // function inside brackets like "(a + b)"
-              CasObject object = readFunction();
+              CasObject object = readFunction(null);
               Function func2 = (Function) object;
               if(func2 != null) func2.inBrackets = true;
               sequence.addObject(object);
@@ -394,12 +446,13 @@ public class Parser extends Base {
               continue;
             }
             
-            CasObject[] params = readParams();
+            CasObject[] params = readParams(null);
             
             // function / constructor call
             Function func = readSymbol('{') ? readObject(sequence, params)
                 : new Function();
             func.params = params;
+            for(CasObject param : params) param.setParent(func);
             sequence.add(id);
             sequence.add('(');
             sequence.addObject(func);
@@ -419,7 +472,7 @@ public class Parser extends Base {
               // list creation
               LinkedList<CasObject> values = new LinkedList<>();
               while(true) {
-                CasObject value = readFunction();
+                CasObject value = readFunction(null);
                 if(value == null) {
                   readExpectedSymbol(']');
                   sequence.addObject(new CreateList(
@@ -433,7 +486,7 @@ public class Parser extends Base {
               // getting item at index
               sequence.add(id);
               sequence.add('[');
-              sequence.addObject(readFunction());
+              sequence.addObject(readFunction(null));
               readExpectedSymbol(']');
             }
             id = "";
@@ -455,26 +508,19 @@ public class Parser extends Base {
         continue;
       }
       
-      switch(character) {
-        case '\n':
-          newLine();
-        case ' ':
-        case '\t':
-          textIndex++;
-          break;
-        default:
-          if(!id.isEmpty()) {
-            sequence.add(id);
-            id = "";
-          }
-          if(sequence.last != null && sequence.last.separator == null) {
-            return sequence;
-          }
-          if(character >= '0' && character <= '9') {
-            sequence.addObject(readNumber());
-          } else {
-            id = readId();
-          }
+      if(!id.isEmpty()) {
+        sequence.add(id);
+        id = "";
+      }
+      
+      if(sequence.last != null && sequence.last.separator == null) {
+        return sequence;
+      }
+      
+      if(character >= '0' && character <= '9') {
+        sequence.addObject(readNumber());
+      } else {
+        id = readId();
       }
     }
   }
@@ -486,7 +532,27 @@ public class Parser extends Base {
     lineStart = textIndex;
   }
   
+  static void skipEmptyCharacters() {
+    while(true) {  
+      char character;
+      if(textIndex == textLength) return;
+      character = text.charAt(textIndex);
+      
+      switch(character) {
+        case '\n':
+          newLine();
+        case ' ':
+        case '\t':
+          break;
+        default:
+          return;
+      }
+      textIndex++;
+    }
+  }
+  
   static String readId() {
+    skipEmptyCharacters();
     int startIndex = -1;
     while(true) {  
       char character;
@@ -497,44 +563,24 @@ public class Parser extends Base {
         character = text.charAt(textIndex);
       }
       
-      switch(character) {
-        case '\n':
-          newLine();
-        case ' ':
-        case '\t':
-          if(startIndex >= 0) {
-            textIndex++;
-            return text.substring(startIndex, textIndex - 1).trim();
-          }
-          break;
-        default:
-          if(startIndex < 0) startIndex = textIndex;
-          if(character >= 'a' && character <= 'z' || character >= 'A'
-              && character <= 'Z' || character == '_') break;
-          if(startIndex == textIndex) return "";
-          if(character >= '0' && character <= '9') break;
-          return text.substring(startIndex, textIndex).trim();
+      while(true) {
+        if(startIndex < 0) startIndex = textIndex;
+        if(character >= 'a' && character <= 'z' || character >= 'A'
+            && character <= 'Z' || character == '_') break;
+        if(startIndex == textIndex) return "";
+        if(character >= '0' && character <= '9') break;
+        return text.substring(startIndex, textIndex).trim();
       }
       textIndex++;
     }
   }
   
   static boolean readSymbol(char symbol) {
-    while(true) {
-      if(textIndex == textLength) return false;
-      char character = text.charAt(textIndex);
-      switch(character) {
-        case '\n':
-          newLine();
-        case ' ':
-        case '\t':
-          break;
-        default:
-          if(character == symbol) textIndex++;
-          return character == symbol;
-      }
-      textIndex++;
-    }        
+    skipEmptyCharacters();
+    if(textIndex == textLength) return false;
+    char character = text.charAt(textIndex);
+    if(character == symbol) textIndex++;
+    return character == symbol;
   }
   
   static void readExpectedSymbol(char symbol) {
@@ -580,7 +626,7 @@ public class Parser extends Base {
             prefix = "";
             sequence.add('+');
             textIndex++;
-            sequence.addObject(readFunction());
+            sequence.addObject(readFunction(null));
             readExpectedSymbol(')');
             sequence.add('+');
             startIndex = textIndex;

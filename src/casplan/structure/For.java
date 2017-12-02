@@ -1,34 +1,32 @@
 package casplan.structure;
 
-import casplan.object.CasObject;
-import casplan.object.Context;
-import casplan.object.Function;
+import casplan.object.*;
 
 public class For extends Function {
-  Function init, increment;
-  CasObject condition;
+  public Function init, increment;
+  public CasObject condition;
   public Function[] code;
-
-  public For(Function init, CasObject condition, Function increment
-      , Function[] code) {
-    this.init = init;
-    this.increment = increment;
-    this.code = code;
-    this.condition = condition;
-  }
 
   @Override
   public Function execute(Context context) {
     init.execute(context);
-    while(condition.toBoolean(context)) {
+    main: while(condition.toBoolean(context)) {
       for(Function call : code) {
+        if(call.breakpoint != BPType.NONE) call.stop(context);
         Function marker = call.execute(context);
         if(marker == Return.instance) return Return.instance;
         if(marker == Continue.instance) break;
-        if(marker == Break.instance) return null;
+        if(marker == Break.instance) break main;
       }
       increment.execute(context);
     }
     return null;
+  }
+  
+  
+  
+  @Override
+  public void setChildBreakpoint(Context context, Function func, BPType type) {
+    setCodeBreakpoint(context, code, func, type, true);
   }
 }

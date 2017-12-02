@@ -1,9 +1,7 @@
 package casplan.object;
 
-import casplan.structure.Return;
-import casplan.structure.Break;
-import casplan.structure.Continue;
-import casplan.structure.ForIn;
+import casplan.object.Function.BPType;
+import casplan.structure.*;
 import casplan.value.CasInteger;
 
 public class CasList extends CasObject {
@@ -54,10 +52,12 @@ public class CasList extends CasObject {
   @Override
   public Function iterate(Context context, ForIn loop) {
     for(int index = 0; index < items.length; index++) {
-      if(loop.index != null) loop.index.setValue(context, new CasInteger(index)
-          , loop);
+      if(loop.index != null) {
+        loop.index.setValue(context, new CasInteger(index), loop);
+      }
       if(loop.value != null) loop.value.setValue(context, items[index], loop);
       for(Function call : loop.code) {
+        if(call.breakpoint != BPType.NONE) call.stop(context);
         Function marker = call.execute(context);
         if(marker == Return.instance) return Return.instance;
         if(marker == Continue.instance) break;
@@ -71,7 +71,7 @@ public class CasList extends CasObject {
 
   @Override
   public String toString() {
-    if(output == Output.DEBUG) return "List";
+    if(output == Output.DEBUG) return "List(" + items.length + ")";
     String str = "";
     for(CasObject value : items) {
       if(!str.isEmpty()) str += ", ";

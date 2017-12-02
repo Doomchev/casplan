@@ -1,3 +1,9 @@
+2017.12.02 (version 0.16)
+  + Debugger functionality.
+  * Corrected stored function positions.
+2017.11.24 (version 0.15.1)
+  + Debugger (view only).
+  * New user function call system.
 2017.11.23 (version 0.15)
   + Local variables context.
 	* Classes are cleaned of unnecessary methods.
@@ -83,13 +89,14 @@ To do:
 	
 	
 To do later:
+  + Alias directive.
+  + Type recognition.
   + Comments (//).
   + Yes/No dialog.
   + Round, floor, ceil functions.
 	+ This syntax in constructor parameters ((this.value){}).
 	+ Constants.
   + GUI.
-  + Debugger.
   + Import directive.
   + Sets.
   + Maps.

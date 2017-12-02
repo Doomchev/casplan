@@ -1,10 +1,19 @@
 package casplan.function;
 
+import casplan.object.CasObject;
 import casplan.object.Context;
 import casplan.object.Function;
 
 public class SetVariable extends VoidFunctionCall {
   public boolean let = false;
+
+  public SetVariable() {
+  }
+
+  public SetVariable(boolean let) {
+    this.params = new CasObject[2];
+    this.let = let;
+  }
   
   @Override
   public int getPriority() {
