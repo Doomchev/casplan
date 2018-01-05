@@ -1,0 +1,17 @@
+limit(value, min, max) {
+	return value < min ? min : value > max ? max : value
+}
+let number = external.math.randomInteger(100)
+do {
+	let guess = external.dialog.enterString("What number did I guess?")
+	if(guess < number){
+		external.dialog.showMessage("Your number is too small!")
+	} else {
+		if(guess > number){
+			external.dialog.showMessage("Your number is too big!")
+		} else {
+			external.dialog.showMessage("You are right!")
+			end()
+		}
+	}
+}

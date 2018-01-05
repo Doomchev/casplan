@@ -1,0 +1,35 @@
+descs = [
+	"Вы находитесь в пещере."
+	"Вы стоите на узкой тропе между скалами."
+	"Вы вышли к маленькому лесу."
+	"Вы пришли к небольшому озеру."
+]
+
+Location = {
+	(nextLocation = null) {
+		if(nextLocation) nextLocation.prev = this
+		this.prev = null
+		this.next = nextLocation
+		this.desc = descs[randomInteger(4)]
+	}
+}
+
+currentLocation = Location()
+for(n = 0 ..< 5) {
+	currentLocation = Location(currentLocation) {}
+}
+
+options = ["Идти влево", "Идти вправо"]
+goLeft = 0
+goRight = 1
+
+do {
+	option = selectOption("Игра", currentLocation.desc, options, 0);
+	if(option == goLeft) {
+		if(currentLocation.prev) currentLocation = currentLocation.prev else showMessage("Влево не пройти.")
+	} else if(option == goRight) {
+		if(currentLocation.next) currentLocation = currentLocation.next else showMessage("Вправо не пройти.")
+	} else {
+		end()
+	}
+}

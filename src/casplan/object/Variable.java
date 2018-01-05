@@ -1,7 +1,7 @@
 package casplan.object;
 
 public class Variable extends CasObject {
-  public CasObject value;
+  public CasObject value = Null.instance;
   public String name;
 
   public Variable(String name) {

@@ -1,0 +1,34 @@
+#import base
+#import graphics2d
+
+editor = extermal.editor
+selectedObject = null
+
+manager = editor.manager
+manager.object = {}
+
+manager.onSelect = (object) {
+	selectedObject = object
+}
+
+objects = {
+  "Add Layer": () {
+    return Layer()
+  }
+  "Add texture": () {
+    return loadTexture(openFile())
+  }
+  "Add image": Image {
+    
+  }
+}
+
+
+manager.onRightClick(object) {
+	
+	menu = Menu() {
+		"Add texture": () {
+			
+		}
+	}
+}

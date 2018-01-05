@@ -1,13 +1,30 @@
 package casplan.object;
 
+import casplan.structure.Range;
+import casplan.list.CasList;
 import casplan.Base;
 import casplan.function.object.CreateObject;
 import casplan.structure.ForIn;
-import javax.swing.JOptionPane;
+import javax.swing.tree.DefaultMutableTreeNode;
 
 public class CasObject extends Base {
   public static final UserObject root = new UserObject();
   public static final Field constructorField = Field.get("constructor_");
+  public static final Field classField = Field.get("class");
+  public static final Field captionField = Field.get("caption");
+
+  public static void execute(UserFunction func, CasObject parent) {
+    if(func == null) return;
+    func.executeUserFunction(new Context(null, parent, 0), func
+        , new CasObject[0]);
+  }
+  
+  public static void execute(UserFunction func, CasObject parent
+      , CasObject[] params) {
+    if(func == null) return;
+    func.executeUserFunction(new Context(null, parent, 0), func
+        , params);
+  }
   
   public CasObject toObject(Context context) {
     return toValue(context);
@@ -73,6 +90,24 @@ public class CasObject extends Base {
   public Type getType(Context context) {
     return Type.UNKNOWN;
   }
+
+  public void fillNode(DefaultMutableTreeNode node) {
+  }
+
+  public String getName() {
+    return toString();
+  }
+
+  public String wrapLink() {
+    String link = objectToLink.get(this);
+    if(link != null && usedObjects.contains(this)) return "%" + link;
+    String str = "";
+    if(link != null) {
+      str += "%" + link + " ";
+      usedObjects.add(this);
+    }
+    return str + toString();
+  }
   
   public enum Type {
     UNKNOWN,
@@ -129,12 +164,14 @@ public class CasObject extends Base {
     caller.error("Object is not incrementable");
   }
   
-  public CasObject getItemAtIndex(int index, Function caller) {
+  public CasObject getItemAtIndex(Context context, CasObject index
+      , Function caller) {
     caller.error("Object is not indexable");
     return null;
   }
   
-  public void setItemAtIndex(int index, CasObject toValue, Function caller) {
+  public void setItemAtIndex(Context context, CasObject index
+      , CasObject toValue, Function caller) {
     caller.error("Object is not indexable");
   }
   
@@ -151,6 +188,24 @@ public class CasObject extends Base {
   public Function iterate(Context context, ForIn loop) {
     loop.error("Object is not iterable.");
     return null;
+  }
+
+  public void initLink() {
+  }
+
+  public void addLink() {
+    if(usedObjects.contains(this)) {
+      if(!objectToLink.containsKey(this)) {
+        linkIndex++;
+        objectToLink.put(this, String.valueOf(linkIndex));
+      }
+    } else {
+      usedObjects.add(this);
+      initContentLinks();
+    }
+  }
+  
+  public void initContentLinks() {
   }
   
   

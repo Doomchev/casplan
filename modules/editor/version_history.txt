@@ -1,0 +1,18 @@
+2017.12.22 (version 0.4)
+  + Visual editing of images.
+  + Dragging handling system.
+2017.12.21 (version 0.3)
+  + Editor canvas.
+2017.12.20 (version 0.2)
+  + Structure editing (textures, images, sprites, lists, integer fields).
+	+ Menus.
+	* TreeView filling and selection.
+2017.12.12 (version 0.1)
+	+ Editor form.
+	+ TreeView object.
+
+
+To do:
+  + Images autocropping.
+  + Sprites positioning.
+  + Sprites resizing.

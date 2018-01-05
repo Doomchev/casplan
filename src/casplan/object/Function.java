@@ -1,7 +1,7 @@
 package casplan.object;
 
 import casplan.Base;
-import casplan.Debugger;
+import debugger.Debugger;
 import javax.swing.JOptionPane;
 
 public class Function extends CasObject {
@@ -11,6 +11,7 @@ public class Function extends CasObject {
   public boolean inBrackets = false;
   public Function blockParent, parentFunction;
   public BPType breakpoint = BPType.NONE;
+  public Source source;
 
   public static enum BPType {
     NONE,
@@ -64,6 +65,10 @@ public class Function extends CasObject {
       } else {
         funcContext.params[index] = params[index].toValue(context);
       }
+      if(func.thisValues[index]) {
+        funcContext.parent.setField(Field.get(func.vars[index].name)
+            , funcContext.params[index], this);
+      }
     }
 
     executeCode(funcContext, func.code, func);
@@ -85,7 +90,7 @@ public class Function extends CasObject {
   
   
   public void stop(Context context) {
-    Debugger.execute(context, this);
+    error("Stop");
   }
   
   public void setBreakpoint(BPType type) {
@@ -200,13 +205,15 @@ public class Function extends CasObject {
   }
   
   public void warning(String message) {
-    JOptionPane.showMessageDialog(null, message + " in line " + line
-        + " column " + column, "Runtime error", JOptionPane.ERROR_MESSAGE);
+    JOptionPane.showMessageDialog(null, message + " in \""
+        + source.fileName + " in line " + line + " column "
+        + column, "Runtime error", JOptionPane.ERROR_MESSAGE);
   }
   
   @Override
   public void error(String message) {
-    Base.runtimeError(message + " in line " + line + " column " + column);
+    Base.runtimeError(message + " in \"" + source.fileName
+        + "\" in line " + line + " column " + column);
   }
   
   @Override

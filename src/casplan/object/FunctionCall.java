@@ -50,6 +50,11 @@ public class FunctionCall extends Function {
   }
   
   @Override
+  public boolean toBoolean(Context context) {
+    return getFunc(context, false).toBoolean(context);
+  }
+  
+  @Override
   public int toInteger(Context context) {
     return getFunc(context, false).toInteger(context);
   }

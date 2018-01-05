@@ -1,0 +1,8 @@
+2017.12.08 (version 0.1)
+	+ First prototype.
+  
+  
+  
+To do:
+	+ Cross-compilation to JavaScript
+  + Type recognition.

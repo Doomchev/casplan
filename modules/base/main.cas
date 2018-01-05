@@ -1,0 +1,17 @@
+#alias Window = external.window
+#alias loadTexture = external.texture.load
+#alias print = external.console.print
+#alias end = external.end
+
+#alias abs = external.math.abs
+#alias randomInteger = external.math.randomInteger
+
+#alias enterString = external.dialog.enterString
+#alias chooseFile = external.dialog.chooseFile
+#alias showMessage = external.dialog.showMessage
+#alias selectOption = external.dialog.selectOption
+
+#alias drawLine = external.draw2d.drawLine
+#alias drawBox = external.draw2d.drawBox
+		
+limit(value, min, max) -> value < min ? min : (value > max ? max : value)

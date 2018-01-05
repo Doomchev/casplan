@@ -1,11 +1,11 @@
 package casplan.function.operator;
 
+import casplan.function.IntegerFunction;
 import casplan.object.CasObject;
 import casplan.object.Context;
-import casplan.object.Function;
 import casplan.value.CasInteger;
 
-public class Subtraction extends Function {
+public class Subtraction extends IntegerFunction {
   @Override
   public int getPriority() {
     return 13;

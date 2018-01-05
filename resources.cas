@@ -1,0 +1,22 @@
+boat: Sprite {
+	x: 0
+	halfWidth: 214
+	image: %1 Image {
+		x: 69
+		height: 202
+		width: 312
+		y: 2
+		caption: "лодка"
+		texture: %0 Texture("examples\wolf_goat_cabbage\sprites.png", "спрайты")
+	}
+	y: 0
+	caption: "лодка"
+	halfHeight: 168
+}
+textures: [{
+	caption: "Пустая"
+}, %0]
+sprites: []
+images: [{
+	caption: "Пустое"
+}, %1]

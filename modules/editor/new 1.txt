@@ -1,0 +1,78 @@
+selectedObject = null
+selectObject(object) {
+	selectedObject = object
+	object.edit()
+}
+
+manager.onSelect = (object) {
+	selectObject(object)
+}
+
+manager.onRightClick(object) {
+	selectObject(object)
+	menu = Menu() {
+		"Add layer": () {
+			
+		}
+	}
+}
+
+canvas.render = () {
+	selectedObject.renderInEditor()
+}
+
+Layer.renderInEditor = () {
+	this.draw()
+}
+
+white = Color("#FFF")
+Image.renderInEditor = () {
+	this.texture.draw()
+	white.drawRectangle(this.x, this.y, this.width, this.height)
+}
+
+
+
+
+
+Color = {
+	(string) {
+		if(string.length = 3) {
+			this.r = fromHex(string[0])
+			this.g = fromHex(string[1])
+			this.b = fromHex(string[2])
+		}
+	}
+	
+	drawRectangle(x, y, width, height) {
+		external.primitives.drawRectangle(
+	}
+}
+
+fromHex(string) {
+	value = 0
+	for(character in string) {
+		value = value * 16
+		character = character.toUpperCase()
+		if(character >= "0" && character <= "9") {
+			value += character
+		} else if(character >= "A" && character <= "F") {
+			value += character.code() - "A".code()
+		} else {
+			showMessage("Encountered invalid symbol \"\(character)\" while converting string \"\(string)\" from hexadecimal.")
+		}
+	}
+	return value
+}
+
+
+
+map = {
+	"Max Payne": "detective"
+	"Mario": "plumber"
+	"Thonolan": "martial artist"
+}
+
+for(value at key in map) {
+	print("\(key) is \(value).")
+}

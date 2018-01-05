@@ -1,40 +1,44 @@
 package casplan;
 
-import casplan.function.Breakpoint;
-import casplan.object.UserFunction;
-import casplan.object.CasObject;
-import casplan.object.Parameter;
-import casplan.object.Variable;
-import casplan.function.End;
-import external.function.string.EnterString;
-import external.function.Print;
-import external.function.ShowMessage;
-import external.function.integer.RandomInteger;
-import casplan.object.Context;
-import casplan.object.Function;
-import casplan.object.FunctionCall;
-import external.function.integer.SelectOption;
+import casplan.object.*;
+import java.awt.Graphics;
 import java.util.HashMap;
+import java.util.HashSet;
 import javax.swing.JOptionPane;
 import java.util.LinkedList;
 import javax.swing.UIManager;
 
 public class Base {
   public static final HashMap<Class, String> functionAddresses = new HashMap<>();
-  static final HashMap<String, UserFunction> userFunctions = new HashMap<>();
-  static final HashMap<String, Variable> globalVariables = new HashMap<>();
+  public static final HashMap<String, UserFunction> userFunctions = new HashMap<>();
+  public static final HashMap<String, Variable> globalVariables = new HashMap<>();
   public static HashMap<String, Parameter> currentParameters = new HashMap<>();
   public static LinkedList<Parameter> currentParametersList = new LinkedList<>();
+  public static HashMap<String, LinkedList<String>> aliases = new HashMap<>();
+  
+  public static HashMap<UserObject, String> classToName = new HashMap<>();
+  public static HashMap<String, UserObject> nameToClass = new HashMap<>();
+  
+  public static HashMap<CasObject, String> objectToLink = new HashMap<>();
+  public static HashMap<String, CasObject> linkToObject = new HashMap<>();
+  public static HashSet<CasObject> usedObjects = new HashSet<>();
+  public static int linkIndex;
+      
+  public static Graphics graphics;
   public static String workingDirectory;
+  public static LinkedList<Source> sources = new LinkedList<>();
+  
+  public static class Source {
+    public StringBuffer text;
+    public String fileName;
+
+    public Source(String fileName, StringBuffer text) {
+      this.text = text;
+      this.fileName = fileName;
+    }
+  }
   
   static {
-    addGlobalVariable("print", new Print());
-    addGlobalVariable("enterString", new EnterString());
-    addGlobalVariable("randomInteger", new RandomInteger());
-    addGlobalVariable("showMessage", new ShowMessage());
-    addGlobalVariable("selectOption", new SelectOption());
-    addGlobalVariable("end", new End());
-    
     try {
       UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
     } catch (Exception ex) {
@@ -45,7 +49,8 @@ public class Base {
   public static String tabString = "";
   public enum Output {
     DEBUG,
-    JS
+    JS,
+    CASPLAN,
   }
   
   public static String codeToString(Function[] code) {
@@ -93,8 +98,11 @@ public class Base {
     return createGlobalVariable(name);
   }
   
-  public static void executeFunctionCall(FunctionCall call) {
-    call.execute(new Context(null, call, currentParametersList.size()));
+  public <K, V> K keyForValue(HashMap<K, V> map, V value) {
+    for(HashMap.Entry<K, V> entry : map.entrySet()) {
+      if(entry.getValue() == value) return entry.getKey();
+    }
+    return null;
   }
   
   public static void runtimeError(String message) {

@@ -10,9 +10,11 @@ import casplan.object.UserObject;
 
 public class CreateObject extends Function {
   public UserFunction constructor;
+  public String className;
   public LinkedList<Entry> entries = new LinkedList<>();
 
-  public CreateObject(CasObject[] params) {
+  public CreateObject(CasObject[] params, String className) {
+    this.className = className;
     this.params = params;
   }
   
@@ -39,11 +41,17 @@ public class CreateObject extends Function {
     CasObject functionObject = context.functionObject;
     if(functionObject != null) {
       functionObject.copyTo(context, object);
+      object.objClass = functionObject.toUserObject();
       
       if(object.constructor != null) {
         context.functionObject = object;
         executeUserFunction(context, object.constructor, params);
       }
+    }
+    
+    if(className != null) {
+      classToName.put(object, className);
+      nameToClass.put(className, object);
     }
     
     for(Entry entry : entries) object.values.put(entry.field

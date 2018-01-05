@@ -1,29 +1,43 @@
 package casplan;
 
+import casplan.structure.Range;
+import casplan.stringmap.CreateStringMap;
 import casplan.value.*;
 import casplan.structure.*;
 import casplan.object.*;
 import casplan.function.object.*;
 import casplan.ChunkSequence.Chunk;
 import casplan.function.*;
-import casplan.function.object.CreateList;
+import casplan.list.CreateList;
 import casplan.function.object.CreateObject.Entry;
+import casplan.list.CasList;
+import casplan.stringmap.StringMap;
+import external.texture.Texture;
 import java.io.*;
 import java.util.HashMap;
 import java.util.LinkedList;
 
 public class Parser extends Base {
-  public static void main(String[] args) throws IOException {
-    executeFunctionCall(readModule("main.cas"));
+  public static void main(String[] args) {
+    executeModule("main.cas");
   }
   
-  static String text;
+  static StringBuffer text = null;
+  static Source currentSource;
   static int textIndex, textLength, currentLine, lineStart;
+  static LinkedList<UserFunction> functions = new LinkedList<>();
   
   
-  public static FunctionCall readModule(String fileName) {
-    workingDirectory = new File(fileName).getParent() + "/";
-    
+  public static void executeModule(String fileName) {
+    workingDirectory = new File(fileName).getAbsoluteFile().getParent() + "/";
+    importModule(fileName);
+    for(UserFunction function : functions) {
+      function.executeCode(new Context(null, function, function.params.length)
+          , function.code, function);
+    }
+  }
+  
+  public static Source readSource(String fileName) {
     currentLine = 1;
     lineStart = -1;
     InputStream stream = null;
@@ -36,11 +50,11 @@ public class Parser extends Base {
     try {
       BufferedReader reader = new BufferedReader(
           new InputStreamReader(stream, "UTF8"));
-      text = "";
+      text = new StringBuffer();
       while(true) {      
         String str = reader.readLine();
         if(str == null) break;
-        text += str + "\n";
+        text.append(str.replaceAll("\t", "  ")).append("\n");
       }
       textIndex = 0;
       textLength = text.length();
@@ -52,20 +66,52 @@ public class Parser extends Base {
       Base.parserError("Cannot read " + fileName);
     }
     
+    Source source = new Source(fileName, text);
+    sources.add(source);
+    return source;
+  }
+      
+    
+  public static void importModule(String fileName) {
+    for(Source source : sources) {
+      if(source.fileName.equals(fileName)) return;
+    }
+    
+    Position pos = new Position();
+    
+    Source oldSource = currentSource;
+    HashMap<String, Parameter> oldParameters = currentParameters;
+    LinkedList<Parameter> oldParametersList = currentParametersList;
+    
+    currentSource = readSource(fileName);
+    
     UserFunction func = new UserFunction();
     func.code = readCodeBlock(true, func);
     func.vars = new Parameter[0];
     func.defaultValues = new CasObject[0];
-    
-    Function params = new Function();
-    params.params = new CasObject[0];
-    
-    FunctionCall call = new FunctionCall();
-    call.params = new CasObject[2];
-    call.params[0] = func;
-    call.params[1] = params;
-    return call;
+    func.params = new CasObject[currentParametersList.size()];
+    functions.add(func);
+
+    pos.set();
+    currentParametersList = oldParametersList;
+    currentParameters = oldParameters;
+    currentSource = oldSource;
+    if(currentSource != null) {
+      text = currentSource.text;
+      textLength = text.length();
+    }    
   }  
+  
+  public static CasObject importObject(String fileName) {
+    currentSource = readSource(fileName);
+    currentSource.text.append("}");
+    textLength++;
+    
+    CasObject object = readObjectData(null);
+    linkToObject.clear();
+    return object;
+  }
+  
 
   public static void toHTML(Function[] code, String fileName) {
     PrintWriter writer;
@@ -154,12 +200,35 @@ public class Parser extends Base {
     func.column = pos.posTextIndex - pos.posLineStart;
     func.startingTextIndex = pos.posTextIndex;
     func.textLength = textIndex - pos.posTextIndex;
+    func.source = currentSource;
     return func;
   }
   
   static If currentIf = null;
   static Function readFunctionCall(Function parent) {
     skipEmptyCharacters();
+    
+    while(readSymbol('#')) {
+      switch(readId()) {
+        case "import":
+          String name = readLine();
+          importModule(name.contains(".") ? name : "modules/" + name
+              + "/main.cas");            
+          break;
+        case "alias":
+          name = readId();
+          readExpectedSymbol('=');
+          LinkedList<String> chunks = new LinkedList<>();
+          while(true) {
+            chunks.add(readId());
+            if(!readSymbol('.')) break;
+          }
+          aliases.put(name, chunks);
+          break;
+      }
+      skipEmptyCharacters();
+    }
+    
     Position startingPos = new Position();
     String id = readId();
     
@@ -175,12 +244,21 @@ public class Parser extends Base {
     switch(id) {
       case "stop":
         return init(new Breakpoint(), startingPos);
+      case "end":
+        return init(new End(), startingPos);
       case "let":
         id = readId();
         readExpectedSymbol('=');
         SetVariable setVariable = new SetVariable(true);
         setVariable.params[1] = readFunction(setVariable);
         setVariable.params[0] = addParameter(id);
+        return init(setVariable, startingPos);
+      case "class":
+        id = readId();
+        readExpectedSymbol('{');
+        setVariable = new SetVariable(false);
+        setVariable.params[1] = readObject(null, id);
+        setVariable.params[0] = getVariable(id);
         return init(setVariable, startingPos);
       case "break":
         return Break.instance;
@@ -265,38 +343,30 @@ public class Parser extends Base {
         return init(forFunc, startingPos);
     }
     
-    while(true) {
-      if(textIndex == textLength) return null;
-      char character = text.charAt(textIndex);
+    skipEmptyCharacters();
+    if(textIndex == textLength) return null;
+    char character = text.charAt(textIndex);
       
-      switch(character) {
-        case '{':
+    switch(character) {
+      case '{':
+        return null;
+      case '}':
+        return null;
+      case '(':
+        textIndex++;
+        UserFunction func = readFunctionDeclaration();
+        if(func != null) {
+          getVariable(id).setValue(null, func, func);
+          userFunctions.put(id, func);
           return null;
-        case '}':
-          return null;
-        case '\n':
-          newLine();
-        case ' ':
-        case '\t':
-          break;
-        case '(':
-          textIndex++;
-          UserFunction func = readFunctionDeclaration();
-          if(func != null) {
-            getVariable(id).setValue(null, func, func);
-            userFunctions.put(id, func);
-            return null;
-          }
-        default:
-          startingPos.set();
-          Chunk chunk = readChunkSequence().compile();
-          Function call = chunk.call;
-          if(call == null) error("Function call expected");
-          return init(call, startingPos);
-      }
-      
-      textIndex++;
-    }    
+        }
+      default:
+        startingPos.set();
+        Chunk chunk = readChunkSequence(false).compile();
+        Function call = chunk.call;
+        if(call == null) error("Function call expected");
+        return init(call, startingPos);
+    }
   }
   
   
@@ -305,11 +375,21 @@ public class Parser extends Base {
     final Position startingPos = new Position();
     final LinkedList<String> idList = new LinkedList<>();
     final LinkedList<CasObject> defaultValues = new LinkedList<>();
+    final LinkedList<Boolean> thisValues = new LinkedList<>();
     while(true) {
       String varId = readId();
       if(!varId.isEmpty()) {
+        if(varId.equals("this")) {
+          readExpectedSymbol('.');
+          varId = readId();
+          thisValues.add(Boolean.TRUE);
+        } else {
+          thisValues.add(Boolean.FALSE);
+        }
         idList.add(varId);
+        
         if(readSymbol('=')) {
+          if("=<>".indexOf(text.charAt(textIndex)) >= 0) break;
           defaultValues.add(readFunction(null));
         } else {
           defaultValues.add(Null.instance);
@@ -347,6 +427,7 @@ public class Parser extends Base {
       init(func, startingPos);
 
       if(shortFunction) {
+        skipEmptyCharacters();
         func.code = new Function[1];
         Position pos = new Position();
         Return ret = new Return();
@@ -358,6 +439,12 @@ public class Parser extends Base {
       }
       func.vars = currentParametersList.toArray(new Parameter[0]);
       func.defaultValues = defaultValues.toArray(new CasObject[0]);
+      func.thisValues = new boolean[thisValues.size()];
+      int index = -1;
+      for(Boolean thisValue : thisValues) {
+        index++;
+        func.thisValues[index] = thisValue;
+      }
       
       currentParameters = oldParameters;
       currentParametersList = oldParametersList;
@@ -371,14 +458,26 @@ public class Parser extends Base {
   
   
   static CasObject readFunction(Function parent) {
-    CasObject func = readChunkSequence().compile().value;
-    func.setParent(parent);
+    CasObject func = readChunkSequence(false).compile().value;
+    if(func != null) func.setParent(parent);
     return func;
   }
   
-  static CreateObject readObject(ChunkSequence sequence
-      , CasObject[] constructorParams) {
-    CreateObject creator = new CreateObject(constructorParams);
+  static CasObject readFunctionData() {
+    String link = null;
+    if(readSymbol('%')) {
+      link = readLink();
+      CasObject linkObject = linkToObject.get(link);
+      if(linkObject != null) return linkObject;
+    }
+    CasObject linkObject = readChunkSequence(true).compile().value;
+    if(link != null) linkToObject.put(link, linkObject);
+    return linkObject;
+  }
+  
+  static Function readObject(CasObject[] constructorParams, String className) {
+    CreateObject objectCreator = new CreateObject(constructorParams, className);
+    CreateStringMap mapCreator = null;
     while(true) {
       String fieldId = readId();
 
@@ -387,28 +486,86 @@ public class Parser extends Base {
         UserFunction func = readFunctionDeclaration();
         if(func != null) {
           if(fieldId.isEmpty()) {
-            creator.constructor = func;
+            objectCreator.constructor = func;
           } else {
-            creator.entries.add(new Entry(Field.get(fieldId), func));
+            objectCreator.entries.add(new Entry(Field.get(fieldId), func));
           }
           continue;
         }
       }
 
       if(fieldId.isEmpty()) {
-        readExpectedSymbol('}');
-        return creator;
+        if(readSymbol('\"')) {
+          if(mapCreator == null) mapCreator = new CreateStringMap();
+          fieldId = readString();
+        } else {
+          readExpectedSymbol('}');
+          if(mapCreator != null) return mapCreator;
+          return objectCreator;
+        }
       }
 
       readExpectedSymbol(':');
-      creator.entries.add(new Entry(Field.get(fieldId), readFunction(creator)));
+      if(mapCreator != null) {
+        mapCreator.entries.add(new CreateStringMap.Entry(fieldId
+            , readFunction(mapCreator)));
+      } else {
+        objectCreator.entries.add(new Entry(Field.get(fieldId)
+            , readFunction(objectCreator)));
+      }
     }
   }
   
-  static ChunkSequence readChunkSequence() {
-    skipEmptyCharacters();
+  static CasObject readObjectData(String className) {
+    UserObject object = new UserObject();
+    StringMap map = null;
+    while(true) {
+      String fieldId = readId();
+
+      if(fieldId.isEmpty()) {
+        if(readSymbol('\"')) {
+          if(map == null) map = new StringMap();
+          fieldId = readString();
+        } else {
+          readExpectedSymbol('}');
+          if(map != null) return map;
+          if(className != null && !className.isEmpty()) {
+            object.objClass = nameToClass.get(className);
+          }
+          return object;
+        }
+      }
+
+      readExpectedSymbol(':');
+      if(map != null) {
+        map.entries.put(fieldId, readFunctionData());
+      } else {
+        object.values.put(Field.get(fieldId), readFunctionData());
+      }
+    }
+  }
+  
+  @SuppressWarnings("null")
+  static ChunkSequence readChunkSequence(boolean isData) {
     String id = readId();
     ChunkSequence sequence = new ChunkSequence();
+    
+    if(id.equals("Texture")) {
+      readExpectedSymbol('(');
+      readExpectedSymbol('\"');
+      String fileName = readString();
+      readExpectedSymbol(',');
+      readExpectedSymbol('\"');
+      String caption = readString();
+      readExpectedSymbol(')');
+      
+      try {
+        sequence.addObject(new Texture(fileName, caption));
+      } catch (IOException ex) {
+        error("Cannot load image \"" + fileName + "\"");
+      }
+      id = "";
+    }
     
     while(true) {
       skipEmptyCharacters();
@@ -418,7 +575,7 @@ public class Parser extends Base {
       }
       char character = text.charAt(textIndex);
       
-      if(".;,\"(){}+-/*=<>!|&?:[]".indexOf(character) >= 0) {
+      if(".;,\"(){}+-/*=<>!|&?:[]%".indexOf(character) >= 0) {
         textIndex++;
         switch(character) {
           case '"':
@@ -449,7 +606,7 @@ public class Parser extends Base {
             CasObject[] params = readParams(null);
             
             // function / constructor call
-            Function func = readSymbol('{') ? readObject(sequence, params)
+            Function func = readSymbol('{') ? readObject(params, null)
                 : new Function();
             func.params = params;
             for(CasObject param : params) param.setParent(func);
@@ -459,7 +616,13 @@ public class Parser extends Base {
             id = "";
             continue;
           case '{':
-            sequence.addObject(readObject(sequence, null));
+            if(isData) {
+              sequence.addObject(readObjectData(id));
+            } else {
+              sequence.add(id);
+              sequence.add('(');
+              sequence.addObject(readObject(null, null));
+            }
             id = "";
             continue;
           case ';':
@@ -468,15 +631,22 @@ public class Parser extends Base {
             if(!id.isEmpty()) sequence.add(id);
             return sequence;
           case '[':
-            if(id.isEmpty()) {
+            if(id.isEmpty() && (sequence.last == null
+                || sequence.last.value == null)) {
               // list creation
               LinkedList<CasObject> values = new LinkedList<>();
               while(true) {
-                CasObject value = readFunction(null);
+                CasObject value = isData ? readFunctionData()
+                    : readFunction(null);
                 if(value == null) {
                   readExpectedSymbol(']');
-                  sequence.addObject(new CreateList(
-                      values.toArray(new CasObject[0])));
+                  if(isData) {
+                    sequence.addObject(new CasList(
+                        values.toArray(new CasObject[0])));
+                  } else {
+                    sequence.addObject(new CreateList(
+                        values.toArray(new CasObject[0])));
+                  }
                   break;
                 }
                 values.add(value);
@@ -484,7 +654,7 @@ public class Parser extends Base {
               }
             } else {
               // getting item at index
-              sequence.add(id);
+              if(!id.isEmpty()) sequence.add(id);
               sequence.add('[');
               sequence.addObject(readFunction(null));
               readExpectedSymbol(']');
@@ -518,18 +688,23 @@ public class Parser extends Base {
       }
       
       if(character >= '0' && character <= '9') {
-        sequence.addObject(readNumber());
+        boolean negative = false;
+        Chunk last = sequence.last;
+        String separator = last == null ? null : last.separator;
+        if(separator != null && separator.endsWith("-")) {
+          if(separator.length() > 1) {
+            last.separator = separator.substring(0, separator.length() - 1);
+            negative = true;
+          } else if(last.prevChunk == null) {
+            sequence.remove(last);
+            negative = true;
+          }
+        }
+        sequence.addObject(readNumber(negative));
       } else {
         id = readId();
       }
     }
-  }
-  
-  static void newLine() {
-    /*System.out.println(currentLine + ": " +text.substring(lineStart + 1
-        , textIndex));*/
-    currentLine++;
-    lineStart = textIndex;
   }
   
   static void skipEmptyCharacters() {
@@ -540,7 +715,8 @@ public class Parser extends Base {
       
       switch(character) {
         case '\n':
-          newLine();
+          currentLine++;
+          lineStart = textIndex;
         case ' ':
         case '\t':
           break;
@@ -549,6 +725,22 @@ public class Parser extends Base {
       }
       textIndex++;
     }
+  }
+  
+  static String readLink() {
+    int startIndex = textIndex;
+    while(true) {
+      if(textIndex == textLength) break;
+      char character = text.charAt(textIndex);
+      if(character >= 'a' && character <= 'z' || character >= 'A'
+          && character <= 'Z' || character == '_'
+          || character >= '0' && character <= '9') {
+        textIndex++;
+        continue;
+      }
+      break;
+    }
+    return text.substring(startIndex, textIndex).trim();
   }
   
   static String readId() {
@@ -588,17 +780,40 @@ public class Parser extends Base {
         + "\" is expected");
   }
   
-  static CasObject readNumber() {
+  static String readLine() {
     int startIndex = textIndex;
-    while(true) {      
+    while(true) {
+      if(textIndex == textLength) break;
+      char character = text.charAt(textIndex);
+      if(character == '\n') break;
+      textIndex++;
+    }
+    return text.substring(startIndex, textIndex).trim();
+  }
+  
+  static CasInteger readNumber(boolean negative) {
+    int startIndex = textIndex;
+    while(true) {
       if(textIndex == textLength) break;
       char character = text.charAt(textIndex);
       if(character < '0' || character > '9') break;
       textIndex++;
     }
     CasInteger integer = new CasInteger(Integer.parseInt(
-        text.substring(startIndex, textIndex)));
+        text.substring(startIndex, textIndex)) * (negative ? -1 : 1));
     return integer;
+  }
+  
+  static String readString() {
+    int startIndex = textIndex;
+    while(true) {
+      if(textIndex == textLength) error("\" expected");
+      char character = text.charAt(textIndex);
+      if(character == '\"') break;
+      textIndex++;
+    }
+    textIndex++;
+    return text.substring(startIndex, textIndex - 1);
   }
   
   static void readString(ChunkSequence sequence) {
@@ -643,6 +858,6 @@ public class Parser extends Base {
   public static void error(String message) {
     if(textIndex == textLength) message = "Reached end of file while " + message;
     Base.parserError(message + " in line " + currentLine + " column "
-        + (textIndex - lineStart));
+        + (textIndex - lineStart) + " of \"" + currentSource.fileName + "\"");
   }
 }

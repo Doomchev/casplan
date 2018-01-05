@@ -1,0 +1,44 @@
+#import base
+#import graphics2d
+
+loadObject("resources.cas")
+
+Sprite.setPosition = (position) {
+  this.position = position
+  this.x = this.pivot[position].x
+  this.y = this.pivot[position].y
+}
+
+wnd = Window()
+
+wnd.render() {
+  scene.draw()
+}
+
+showMessage("Вам надо перевезти волка, козу и капусту на другой берег. В лодку можно брать только одного" + 
+	" пассажира. Волка нельзя оставлять с козой, а козу - с капустой.")
+
+wnd.onClick = (x, y) {
+  scene.onCollision(x, y, (sprite) {
+    if(sprite == boat) {
+      boat.setPosition(boat.position == left ? right : left)
+			spriteInBoat.setPosition(inBoat)
+    } else if(sprite.position == inBoat || sprite.position == boat.position && spriteInBoat == null) {
+      sprite.setPosition(sprite.position == inBoat ? boat.position : inBoat)
+			spriteInBoat = sprite.position == inBoat ? sprite : null;
+    }
+		
+		if(wolf.position == right && goat.position == right && cabbage.position == right) {
+			showMessage("У вас получилось!")
+			loadObject("resources.cas")
+    } else if(goat.position != inBoat && goat.position != boat.position) {
+      if(cabbage.position == goat.position) {
+        showMessage("Коза съела капусту!")
+				loadObject("resources.cas")
+      } else if(wolf.position == goat.position) {
+        showMessage("Волк съел козу!")
+				loadObject("resources.cas")
+      }
+    }
+  })
+}

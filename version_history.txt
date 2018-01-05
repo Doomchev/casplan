@@ -1,6 +1,26 @@
+2017.12.22 (version 0.17.4)
+  + Remainder operator (%).
+2017.12.21 (version 0.17.3)
+	+ Modified parsing mechanism for loading objects at runtime.
+	+ Object links for saving circular structures.
+  + Functions for drawing lines and boxes.
+2017.12.18 (version 0.17.2)
+	+ Pseudo-classes.
+	+ Saving / loading objects.
+2017.12.12 (version 0.17.1)
+  + String maps.
+  + User object indexation.
+	+ Popup menus.
+2017.12.04 (version 0.17)
+	+ Multiple sources support.
+  + Import directive.
+	+ This syntax in constructor parameters ((this.value){}).
+  + Alias directive.
+  + Absolute operator (abs).
+	+ Negative numbers.
 2017.12.02 (version 0.16)
   + Debugger functionality.
-  * Corrected stored function positions.
+  * Corrected stored positions of functions.
 2017.11.24 (version 0.15.1)
   + Debugger (view only).
   * New user function call system.
@@ -86,24 +106,32 @@
   
   
 To do:
+  + Image pixel manipulations.
+	+ Editor automation.
 	
 	
 To do later:
-  + Alias directive.
-  + Type recognition.
-  + Comments (//).
-  + Yes/No dialog.
-  + Round, floor, ceil functions.
-	+ This syntax in constructor parameters ((this.value){}).
-	+ Constants.
+	+ List / indexation determination based on newline character.
+  + Assets library generation for Javascript.
+  + Android interpreter.
   + GUI.
-  + Import directive.
+  + Automatized java - casplan objects interoperation.
+
+  
+To do when necessary:
+	+ Variable getters / setters.
+  + Comments (// /* */).
   + Sets.
-  + Maps.
   + Enumerations.
+  + Switch operator (switch(x) {a: code b: code} default {code})
   + Slices ([..a] [a..] [a..b]).
-  + Switch(switch(x) {a: code b: code} default {code})
-  + Remainder operator (%).
   + Power operator (**).
   + Unary minus (-a).
   + Not operator (!a).
+  + Round, floor, ceil functions.
+
+  
+Plans:
+	+ Constants.
+  + C++ interpreter.
+  + Cross-compilation to Java and C++.

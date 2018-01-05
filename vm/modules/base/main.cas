@@ -1,0 +1,10 @@
+#alias Window = external.window
+#alias loadTexture = external.texture.load
+#alias print = external.console.print
+#alias abs = external.math.abs
+#alias enterString = external.dialog.enterString
+#alias randomInteger = external.math.randomInteger
+#alias showMessage = external.dialog.showMessage
+#alias selectOption = external.dialog.selectOption
+		
+limit(value, min, max) -> value < min ? min : (value > max ? max : value)

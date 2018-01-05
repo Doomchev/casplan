@@ -18,8 +18,7 @@ public class ItemAtIndex extends ObjectFunction {
   
   @Override
   public CasObject toValue(Context context) {
-    return params[0].toValue(context).getItemAtIndex(
-        params[1].toInteger(context), this);
+    return params[0].toValue(context).getItemAtIndex(context, params[1], this);
   } 
   
   @Override
@@ -46,8 +45,7 @@ public class ItemAtIndex extends ObjectFunction {
   
   @Override
   public void setValue(Context context, CasObject value, Function caller) {
-    params[0].toValue(context).setItemAtIndex(params[1].toInteger(context)
-        , value, this);
+    params[0].toValue(context).setItemAtIndex(context, params[1], value, this);
   }
   
   @Override

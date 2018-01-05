@@ -1,0 +1,67 @@
+#import base
+#import graphics2d
+
+wnd = Window
+
+board = loadTexture("board.png")
+tilemap = Tilemap(7, 1, Img.map("pawns.png", 3))
+
+empty = 0
+white = 1
+black = 2
+
+rules() {
+	showMessage("Вам нужно поменять черные и белые пешки местами.\nЧерные пешки ходят влево, белые - вправо.\n"
+			+ "Пешка может пойти на одну клетку вперед\nили перепрыгнуть через следующую пешку\nна свободное поле."
+			, "Правила игры")
+}
+
+init() {
+	for(n = 0 ..< tilemap.cellXQuantity) tilemap.setTile(n, 0, n <= 2 ? white : (n >= 4 ? black : empty))
+}
+
+init()
+rules()
+
+wnd.render = () {
+	tilemapX = (wnd.width - tilemap.cellWidth * 7) / 2
+	tilemapY = (wnd.height - tilemap.cellHeight) / 2 - 31
+	boardX = (wnd.width - board.width) / 2
+	boardY = (wnd.height - board.height) / 2 + 31
+	
+	board.draw(boardX, boardY)
+  tilemap.draw(tilemapX, tilemapY)
+}
+
+wnd.onClick = (x, y) {
+	let tileNum = limit(tilemap.getTileX(x - tilemapX), 0, tilemap.cellXQuantity - 1)
+	let tile = tilemap.getTile(tileNum, 0)
+	if(tile == white && tileNum < tilemap.cellXQuantity - 1) {
+		let nextTile = tilemap.getTile(tileNum + 1, 0)
+		if(nextTile == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum + 1, 0, tile)
+		} else if(tileNum < tilemap.cellXQuantity - 2 && tilemap.getTile(tileNum + 2, 0) == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum + 2, 0, tile)
+		}
+	} else if(tile == black && tileNum > 0) {
+		let prevTile = tilemap.getTile(tileNum - 1, 0)
+		if(prevTile == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum - 1, 0, tile)
+		} else if(tileNum > 1 && tilemap.getTile(tileNum - 2, 0) == empty) {
+			tilemap.setTile(tileNum, 0, empty)
+			tilemap.setTile(tileNum - 2, 0, tile)
+		}
+	}
+	
+	if(tilemap.getTile(0, 0) == white) return null
+	for(n = 1 ..< tilemap.cellXQuantity) {
+		if(tilemap.getTile(n - 1, 0) == (tilemap.getTile(n, 0) == white ? black : white)) return null
+	}
+	
+	showMessage("Вы выиграли!")
+	init()
+	rules()
+}

@@ -1,0 +1,255 @@
+#import base
+#import graphics2d
+
+editor = external.editor
+
+root = external.io.loadObject("resources.cas")
+if(root == null) root = {
+  textures: [{caption: "Пустая"}]
+  images: [{caption: "Пустое"}]
+  sprites: []
+}
+
+manager = editor.manager
+manager.object = root
+manager.refresh()
+
+drag = {
+  xIndex: -1
+  start: (x, y) {
+    let image = manager.selected
+    
+		for(xIndex = 0 ..< 3) {
+      for(yIndex = 0 ..< 3) {
+        let box = getBoxSprite(image, xIndex, yIndex)
+        if(box.collidesWith(x - 8, y - 8)) {
+          this.startingX = x
+          this.startingY = y
+          this.xIndex = xIndex
+          this.yIndex = yIndex
+          
+          this.x = image.x
+          this.y = image.y
+          this.width = image.width
+          this.height = image.height
+          
+          return null
+        }
+      }
+    }
+  }
+  move(x, y) {
+    if(this.xIndex < 0) return null
+  
+    let image = manager.selected
+    let dx = x - this.startingX
+    let dy = y - this.startingY
+    
+    if(this.xIndex == 0) {
+      image.x = this.x + dx
+      image.width = this.width - dx
+    } else if(this.xIndex != 1) {
+      image.width = this.width + dx
+    }
+    
+    if(this.yIndex == 0) {
+      image.y = this.y + dy
+      image.height = this.height - dy
+    } else if(this.yIndex != 1) {
+      image.height = this.height + dy
+    }
+    
+    editor.refresh()
+  }
+  end(x, y) {
+    xIndex = -1
+  }
+}
+
+editor.onMouseDown = (x, y) {
+  drag.start(x, y)
+}
+
+editor.onMouseDrag = (x, y) {
+  drag.move(x, y)
+}
+
+editor.onMouseUp = (x, y) {
+  drag.end(x, y)
+}
+
+
+addEntry(object) {
+	let id = enterString("Введите название поля:")
+	if(id == "") return null
+  
+	manager.selected[id] = object
+	manager.refresh()
+}
+
+selectImage() {
+	let index = selectOption("Выбор", "Выберите изображение:", root.images, 1)
+	if(index <= 0) return null
+  return root.images[index]
+}
+
+createSprite() {
+  let image = selectImage()
+  if(image == null) return null
+  
+	let caption = enterString("Введите название спрайта:")
+	if(caption == "") return null
+  
+  let sprite = Sprite(image)
+  sprite.halfWidth = image.width / 2
+  sprite.halfHeight = image.height / 2
+  sprite.caption = caption
+  root.sprites.addLast(sprite)
+	return sprite
+}
+
+selectSprite() {
+	let index = selectOption("Выбор", "Выберите спрайт:", root.sprites, 1)
+	if(index <= 0) return null
+	return root.sprites[index]
+}
+
+
+
+menuAddNumber = ["Добавить целое число", () {
+  let number = enterString("Введите число:")
+  if(number == "") return null
+  addEntry(number.integerValue)
+}]
+
+menuAddList = ["Добавить список", () {
+  addEntry([])
+}]
+
+menuCancel = ["Отмена", () {}]
+
+
+
+manager.onRightClick = (x, y) {
+  let selected = manager.selected
+	if(selected.class == Layer) {
+		menu = [
+			["Добавить новый спрайт", () {
+				let sprite = selectSprite()
+				if(sprite) {
+          selected.addLast(sprite)
+          manager.refresh()
+        }
+			}],
+			menuCancel
+		]
+	} else if(manager.selected.class == Image) {
+		menu = [
+			["Автообрезка", () {
+			}],
+			menuCancel
+		]
+	} else if(selected.class == Sprite) {
+		menu = [
+      menuAddNumber,
+			["Изменить изображение", () {
+				let image = selectImage()
+				if(image) {
+          selected.image = image
+          editor.canvas.refresh()
+        }
+			}],
+			["Размер спрайта к размеру изображения", () {
+        selected.width = selected.image.width
+        selected.height = selected.image.height
+        editor.canvas.refresh()
+			}],
+			menuCancel
+    ]
+	} else if(selected.class == List) {
+		menu = [
+			["Добавить существующий спрайт", () {
+				let sprite = createSprite()
+				if(sprite) {
+          selected.addLast(sprite)
+          manager.refresh()
+        }
+			}],
+			menuCancel
+		]    
+	} else {
+		menu = [
+      menuAddNumber,
+      menuAddList,
+      ["Загрузить текстуру", () {
+        fileName = chooseFile("Выберите файл текстуры:")
+        if(fileName == "") return null
+        
+        let caption = enterString("Введите название текстуры:")
+        if(caption == "") return null
+        
+        let texture = loadTexture(fileName)
+        texture.caption = caption
+        root.textures.addLast(texture)
+      }],
+      ["Добавить новое изображение", () {
+        let index = selectOption("Выбор", "Выберите текстуру:", root.textures, 1)
+        if(index <= 0) return null
+        
+        let caption = enterString("Введите название изображения:")
+        if(caption == "") return null
+        
+        let image = Image(root.textures[index])
+        image.caption = caption
+        root.images.addLast(image)
+				manager.refresh()
+      }],
+			["Добавить новый слой", () {
+				addEntry(Layer())
+			}],
+			["Добавить новый спрайт", () {
+				let sprite = createSprite()
+				if(sprite) addEntry(sprite)
+			}],
+			menuCancel
+		]
+	}
+	external.menu(x, y, menu)
+}
+
+editor.onClose = () {
+	external.io.saveObject(root, "resources.cas")
+}
+
+drawRectangle(x, y, width, height) {
+	drawLine(x, y, x + width - 1, y)
+	drawLine(x, y, x, y + height - 1)
+	drawLine(x, y + height - 1, x + width - 1, y + height - 1)
+	drawLine(x + width - 1, y, x + width - 1, y + height - 1)
+}
+
+getBoxSprite(image, xIndex, yIndex) {
+	let x = [image.x - 4, image.x + image.width / 2 - 2, image.x + image.width + 3][xIndex]
+	let y = [image.y - 4, image.y + image.height / 2 - 2, image.y + image.height + 3][yIndex]
+	return Sprite(null, x, y, 4, 4)
+}
+
+manager.onSelect = () {
+  editor.refresh()
+}
+
+editor.render = () {
+	let selected = manager.selected
+	if(selected == null) return null
+	if(selected.class == Image) {
+		let texture = selected.texture
+		texture.draw(8, 8, 0, 0, texture.width, texture.height)
+		drawRectangle(selected.x + 8, selected.y + 8, selected.width, selected.height)
+		for(xIndex = 0 ..< 3) {
+      for(yIndex = 0 ..< 3) {
+        box = getBoxSprite(selected, xIndex, yIndex)
+        drawBox(8 + box.x - box.halfWidth, 8 + box.y - box.halfHeight, box.halfWidth * 2, box.halfHeight * 2)
+      }
+		}
+	}
+}

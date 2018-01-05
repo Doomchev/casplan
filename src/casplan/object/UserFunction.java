@@ -5,6 +5,7 @@ public class UserFunction extends Function {
   public Function[] code = null;
   public Parameter[] vars;
   public CasObject[] defaultValues;
+  public boolean[] thisValues;
   
   @Override
   public Function execute(Context context, CasObject[] params) {

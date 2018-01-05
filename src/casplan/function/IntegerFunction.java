@@ -21,4 +21,9 @@ public class IntegerFunction extends Function {
   public CasObject toValue(Context context) {
     return new CasInteger(toInteger(context));
   }
+
+  @Override
+  public String toStr(Context context) {
+    return String.valueOf(toInteger(context));
+  }
 }

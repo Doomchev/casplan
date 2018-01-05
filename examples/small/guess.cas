@@ -1,3 +1,4 @@
+#import base
 let number = randomInteger(100)
 do {
 	let guess = enterString("What number did I guess?")
@@ -7,6 +8,7 @@ do {
 		showMessage("Your number is too big!")
 	} else {
 		showMessage("You are right!")
-		end()
+		end
 	}
 }
+

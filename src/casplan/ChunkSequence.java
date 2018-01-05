@@ -1,13 +1,22 @@
 package casplan;
 
-import casplan.function.object.CreateList;
+import casplan.structure.Range;
+import external.texture.LoadTexture;
+import external.window.CreateWindow;
+import static casplan.Parser.currentSource;
+import casplan.list.CreateList;
 import casplan.object.*;
 import casplan.function.*;
 import casplan.function.operator.*;
 import casplan.function.object.*;
 import casplan.function.bool.*;
-import external.function.object.*;
+import external.console.Print;
+import external.dialog.*;
+import external.draw2d.*;
+import external.math.*;
+import external.editor.*;
 import java.util.HashMap;
+import java.util.LinkedList;
 
   
 public class ChunkSequence extends Base {
@@ -22,8 +31,21 @@ public class ChunkSequence extends Base {
   
   static {
     addFunction("texture.load", new LoadTexture());
-    addFunction("gui.window", new CreateWindow());
-    
+    addFunction("window", new CreateWindow());
+    addFunction("console.print", new Print());
+    addFunction("math.randomInteger", new RandomInteger());
+    addFunction("math.abs", new Abs());
+    addFunction("dialog.enterString", new EnterString());
+    addFunction("dialog.showMessage", new ShowMessage());
+    addFunction("dialog.selectOption", new SelectOption());
+    addFunction("dialog.chooseFile", new ChooseFile());
+    addFunction("editor", new CreateEditor());
+    addFunction("menu", new CreateMenu());
+    addFunction("io.saveObject", new SaveObject());
+    addFunction("io.loadObject", new LoadObject());
+    addFunction("draw2d.drawLine", new DrawLine());
+    addFunction("draw2d.drawBox", new DrawBox());
+
     separators.put(">=", new MoreOrEqual());
     separators.put("==", new Equal());
     separators.put("!=", new NotEqual());
@@ -33,6 +55,7 @@ public class ChunkSequence extends Base {
     separators.put("-", new Subtraction());
     separators.put("*", new Multiplication());
     separators.put("/", new Division());
+    separators.put("%", new Remainder());
     separators.put("<", new LessThan());
     separators.put(">", new MoreThan());
     separators.put("=", new SetVariable());
@@ -75,7 +98,7 @@ public class ChunkSequence extends Base {
     
     public void error(String message) {
       Base.parserError(message + " in line " + line + " column "
-          + column);
+          + column + " of \"" + currentSource.fileName + "\"");
     }
   }
 
@@ -91,9 +114,24 @@ public class ChunkSequence extends Base {
         addObject(This.instance);
         return;
       case "List":
-        addObject(new CreateList(null));
+        addObject(CreateList.instance);
         return;
     }
+    
+    // resolving aliases
+    if(last == null || last.separator == null || !last.separator.equals(".")) {
+      LinkedList<String> alias = aliases.get(id);
+      if(alias != null) {
+        boolean notFirst = false;
+        for(String aliasChunk : alias) {
+          if(notFirst) add('.');
+          add(new Chunk(aliasChunk, null, null, null));
+          notFirst = true;
+        }
+        return;
+      }
+    }
+    
     add(new Chunk(id, null, null, null));
   }
 
@@ -122,6 +160,24 @@ public class ChunkSequence extends Base {
       chunk.prevChunk = last;
     }
     last = chunk;  
+  }
+  
+  void remove(Chunk chunk) {
+    Chunk chunk2 = first;
+    while(chunk2 != chunk) {
+      if(chunk == null) return;
+      chunk = chunk.nextChunk;
+    }
+    if(chunk.prevChunk == null) {
+      first = chunk.nextChunk;
+    } else {
+      chunk.prevChunk.nextChunk = chunk.nextChunk;
+    }
+    if(chunk.nextChunk == null) {
+      last = chunk.prevChunk;
+    } else {
+      chunk.nextChunk.prevChunk = chunk.prevChunk;
+    }
   }
 
   void replace(Chunk startingChunk, int quantity, Chunk newChunk) {
@@ -186,13 +242,19 @@ public class ChunkSequence extends Base {
           adLength += 2;
           chunk2 = chunk2.nextChunk;
         }
-        CasObject object = external.get(address);
-        if(object == null) {
-          chunk.error("External address \"" + address + "\" is not found");
+        try {
+          Function func = external.get(address);
+          if(func == null) {
+            chunk.error("External address \"" + address + "\" is not found");
+          }
+          func = func.getClass().newInstance();
+          func.source = Parser.currentSource;
+          Chunk newChunk = new Chunk(null, null, func, func.toFunction());
+          replace(chunk, adLength, newChunk);
+          chunk = newChunk;
+        } catch (Exception ex) {
+          parserError("Internal error");
         }
-        Chunk newChunk = new Chunk(null, null, object, object.toFunction());
-        replace(chunk, adLength, newChunk);
-        chunk = newChunk;
       }
       chunk = chunk.nextChunk;
     }
@@ -220,6 +282,7 @@ public class ChunkSequence extends Base {
             Function value = chunk.separatorFunc.getClass().newInstance();
             value.line = chunk.line;
             value.column = chunk.column;
+            value.source = currentSource;
             boolean increment = chunk.separator.equals("++");
             value.params = new CasObject[increment ? 1 : 2];
             value.params[0] = n == 3 ? (chunk.prevChunk.id == null

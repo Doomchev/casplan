@@ -1,0 +1,7 @@
+#alias Window = external.gui.window
+#alias loadTexture = external.texture.load
+#alias showMessage = external.gui.showMessage
+#alias print = external.console.print
+#alias abs = external.math.abs
+
+limit(value, min, max) -> value < min ? min : (value > max ? max : value)
